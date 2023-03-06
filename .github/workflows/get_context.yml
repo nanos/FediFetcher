@@ -19,13 +19,12 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with: 
           name: artifacts
+          workflow: get_context.yml
+          if_no_artifact_found: warn
       - name: Display structure of downloaded files
-        if: always()
         run: ls -R
       - run: python get_context.py ${{ secrets.ACCESS_TOKEN }} mstdn.thms.uk 1 1
-        if: always()
       - name: Upload artifacts
-        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: artifacts
