@@ -1,0 +1,30 @@
+name: getContext
+
+on:
+  # schedule:
+  #    - cron: '0 0 * * *'
+  workflow_dispatch:
+  
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+       uses: actions/setup-python@v4
+       with:
+        python-version: '3.10' 
+      - name: Download all workflow run artifacts
+        uses: actions/download-artifact@v3
+        with: 
+          name: artifacts
+      - name: Display structure of downloaded files
+        run: ls -R
+      - run: python get_context.py mstdn.thms.uk 1 1
+        with:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifacts
+          path: |
+            artifacts
