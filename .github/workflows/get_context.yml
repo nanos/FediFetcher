@@ -16,7 +16,7 @@ jobs:
          cache: 'pip' # caching pip dependencies
       - run: pip install -r requirements.txt
       - name: Download all workflow run artifacts
-        uses: actions/download-artifact@v3
+        uses: dawidd6/action-download-artifact@v2
         with: 
           name: artifacts
       - name: Display structure of downloaded files
