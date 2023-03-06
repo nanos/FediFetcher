@@ -388,31 +388,26 @@ class OrderedSet:
 
 if __name__ == "__main__":
     HELP_MESSAGE = """
-Usage: ACCESS_TOKEN=XXXX python3 pull_context.py <server> <reply_interval_in_hours> <home_timeline_length>
+Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours> <home_timeline_length>
 
-To run this script, set the ACCESS_TOKEN environment variable to your
-Mastodon access token. The access token can be generated at
+The access token can be generated at
 https://<server>/settings/applications, and must have read:search,
 read:statuses and admin:read:accounts scopes.
 """
 
-    try:
-        ACCESS_TOKEN = os.environ["ACCESS_TOKEN"]
-    except KeyError:
-        print("ACCESS_TOKEN environment variable not set.")
+   
+
+    if len(sys.argv) < 5:
         print(HELP_MESSAGE)
         sys.exit(1)
 
-    if len(sys.argv) < 4:
-        print(HELP_MESSAGE)
-        sys.exit(1)
-
-    SERVER = sys.argv[1]
-    REPLY_INTERVAL_IN_HOURS = int(sys.argv[2])
+    ACCESS_TOKEN = sys.argv[2]
+    SERVER = sys.argv[2]
+    REPLY_INTERVAL_IN_HOURS = int(sys.argv[3])
     SEEN_URLS_FILE = "artifacts/seen_urls"
     REPLIED_TOOT_SERVER_IDS_FILE = "artifacts/replied_toot_server_ids"
 
-    MAX_HOME_TIMELINE_LENGTH = int(sys.argv[3])
+    MAX_HOME_TIMELINE_LENGTH = int(sys.argv[4])
 
     SEEN_URLS = OrderedSet([])
     if os.path.exists(SEEN_URLS_FILE):
