@@ -3,7 +3,7 @@ name: getAllRepliesToKnownPots
 on:
   workflow_dispatch
   schedule:
-     - cron: '0 0 * * *'
+     - cron: '*/15 * * * *'
   
 jobs:
   run:
