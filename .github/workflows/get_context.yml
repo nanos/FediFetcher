@@ -18,6 +18,7 @@ jobs:
         with: 
           name: artifacts
       - name: Display structure of downloaded files
+        if: always()
         run: ls -R
       - run: python get_context.py ${{ secrets.ACCESS_TOKEN }} mstdn.thms.uk 1 1
       - name: Upload artifacts
