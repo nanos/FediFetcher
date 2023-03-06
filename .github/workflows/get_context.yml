@@ -24,7 +24,7 @@ jobs:
           path: artifacts
       - name: Display structure of downloaded files
         run: ls -R
-      - run: python get_context.py ${{ secrets.ACCESS_TOKEN }} mstdn.thms.uk 1 1
+      - run: python get_context.py ${{ secrets.ACCESS_TOKEN }} mstdn.thms.uk 48 400
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
