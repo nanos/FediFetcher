@@ -1,4 +1,4 @@
-name: getContext
+name: getAllRepliesToKnownPots
 
 on:
   workflow_dispatch
@@ -22,9 +22,7 @@ jobs:
           workflow: get_context.yml
           if_no_artifact_found: warn
           path: artifacts
-      - name: Display structure of downloaded files
-        run: ls -R
-      - run: python get_context.py ${{ secrets.ACCESS_TOKEN }} mstdn.thms.uk 48 400
+      - run: python get_context.py ${{ secrets.ACCESS_TOKEN }} ${{ vars.MASTODON_SERVER }} ${{ vars.REPLY_INTERVAL_IN_HOURS }} ${{ vars.HOME_TIMELINE_LENGTH }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
