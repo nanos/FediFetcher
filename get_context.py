@@ -33,24 +33,23 @@ def pull_context(
 
 
     if max_home_timeline_length > 0:
+        """Do the same with any toots on the key owner's home timeline """
         timeline_toots = get_timeline(server, access_token, max_home_timeline_length)
         known_context_urls = get_all_known_context_urls(server, timeline_toots)
-        seen_urls.update(known_context_urls)
         replied_toot_ids = get_all_replied_toot_server_ids(
-            server, reply_toots, replied_toot_server_ids
+            server, timeline_toots, replied_toot_server_ids
         )
-        context_urls = get_all_context_urls(server, replied_toot_ids)
-        add_context_urls(server, access_token, context_urls, seen_urls)
+        add_context_urls(server, access_token, known_context_urls, seen_urls)
 
 def get_timeline(server, access_token, max):
-    """Get all post in the user's timeline"""
-
+    """Get all post in the user's home timeline"""
 
     url = f"https://{server}/api/v1/timelines/home"
     
     response = get_toots(url, access_token)
     toots = response.json()
 
+    # Paginate as needed
     while len(toots) < max:
         response = get_toots(response.links['next']['url'], access_token)
         toots = toots + response.json()
@@ -218,12 +217,7 @@ def get_replied_toot_server_id(server, toot, replied_toot_server_ids):
     if url is None:
         return None
 
-    match = parse_mastodon_url(url)
-    if match is not None:
-        replied_toot_server_ids[o_url] = (url, match)
-        return (url, match)
-
-    match = parse_pleroma_url(url)
+    match = parse_url(url)
     if match is not None:
         replied_toot_server_ids[o_url] = (url, match)
         return (url, match)
@@ -390,9 +384,14 @@ if __name__ == "__main__":
     HELP_MESSAGE = """
 Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours> <home_timeline_length>
 
-The access token can be generated at
-https://<server>/settings/applications, and must have read:search,
-read:statuses and admin:read:accounts scopes.
+ - <access_token>: The access token can be generated at https://<server>/settings/applications,
+   and must have read:search, read:statuses and admin:read:accounts scopes.
+ - <server>: The name of your server (e.g. `mstdn.thms.uk`)
+ - <reply_interval_in_hours>: Only look at posts that have received replies in this period
+ - <home_timeline_length>: Also look for replies to posts in the API-Key owner's home timeline, up to 
+   this many posts
+
+
 """
 
    
