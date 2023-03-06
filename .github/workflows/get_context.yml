@@ -21,7 +21,9 @@ jobs:
         if: always()
         run: ls -R
       - run: python get_context.py ${{ secrets.ACCESS_TOKEN }} mstdn.thms.uk 1 1
+        if: always()
       - name: Upload artifacts
+        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: artifacts
