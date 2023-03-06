@@ -400,10 +400,15 @@ Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours>
     ACCESS_TOKEN = sys.argv[1]
     SERVER = sys.argv[2]
     REPLY_INTERVAL_IN_HOURS = int(sys.argv[3])
+    MAX_HOME_TIMELINE_LENGTH = int(sys.argv[4])
+
+    print(
+        f"Getting last {REPLY_INTERVAL_IN_HOURS} hrs of replies, and latest {MAX_HOME_TIMELINE_LENGTH} posts in home timeline from {SERVER}"
+    )
+
     SEEN_URLS_FILE = "artifacts/seen_urls"
     REPLIED_TOOT_SERVER_IDS_FILE = "artifacts/replied_toot_server_ids"
 
-    MAX_HOME_TIMELINE_LENGTH = int(sys.argv[4])
 
     SEEN_URLS = OrderedSet([])
     if os.path.exists(SEEN_URLS_FILE):
