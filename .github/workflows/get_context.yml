@@ -21,6 +21,7 @@ jobs:
           name: artifacts
           workflow: get_context.yml
           if_no_artifact_found: warn
+          path: artifacts
       - name: Display structure of downloaded files
         run: ls -R
       - run: python get_context.py ${{ secrets.ACCESS_TOKEN }} mstdn.thms.uk 1 1
