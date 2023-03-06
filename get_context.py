@@ -401,7 +401,7 @@ read:statuses and admin:read:accounts scopes.
         print(HELP_MESSAGE)
         sys.exit(1)
 
-    ACCESS_TOKEN = sys.argv[2]
+    ACCESS_TOKEN = sys.argv[1]
     SERVER = sys.argv[2]
     REPLY_INTERVAL_IN_HOURS = int(sys.argv[3])
     SEEN_URLS_FILE = "artifacts/seen_urls"
