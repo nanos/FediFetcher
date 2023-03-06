@@ -36,9 +36,6 @@ def pull_context(
         """Do the same with any toots on the key owner's home timeline """
         timeline_toots = get_timeline(server, access_token, max_home_timeline_length)
         known_context_urls = get_all_known_context_urls(server, timeline_toots)
-        replied_toot_ids = get_all_replied_toot_server_ids(
-            server, timeline_toots, replied_toot_server_ids
-        )
         add_context_urls(server, access_token, known_context_urls, seen_urls)
 
 def get_timeline(server, access_token, max):
@@ -318,8 +315,8 @@ def add_context_urls(server, access_token, context_urls, seen_urls):
     count = 0
     for url in context_urls:
         if url not in seen_urls:
-            seen_urls.add(url)
             add_context_url(url, server, access_token)
+            seen_urls.add(url)
             count += 1
 
     print(f"Added {count} new context toots")
