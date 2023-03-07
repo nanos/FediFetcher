@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import requests
+import time
 
 
 def pull_context(
@@ -17,6 +18,7 @@ def pull_context(
     reply_interval_hours,
     max_home_timeline_length,
 ):
+
     if reply_interval_hours > 0:
         """pull the context toots of toots user replied to, from their
         original server, and add them to the local server."""
@@ -314,6 +316,11 @@ def get_toot_context(server, toot_id, toot_url):
         except Exception as ex:
             print(f"Error parsing context for toot {toot_url}. Exception: {ex}")
         return []
+    elif resp.status_code == 429:
+        reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
+        print(f"Rate Limit hit when getting context for {toot_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
+        time.sleep((reset - datetime.now()).total_seconds() + 1)
+        return get_toot_context(server, toot_id, toot_url)
 
     print(
         f"Error getting context for toot {toot_url}. Status code: {resp.status_code}"
@@ -362,6 +369,11 @@ def add_context_url(url, server, access_token):
             "Make sure you have the read:search scope enabled for your access token."
         )
         return False
+    elif resp.status_code == 429:
+        reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
+        print(f"Rate Limit hit when adding url {search_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
+        time.sleep((reset - datetime.now()).total_seconds() + 1)
+        return add_context_url(url, server, access_token)
     else:
         print(
             f"Error adding url {search_url} to server {server}. Status code: {resp.status_code}"
