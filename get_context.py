@@ -48,8 +48,11 @@ def get_timeline(server, access_token, max):
 
     # Paginate as needed
     while len(toots) < max:
-        response = get_toots(response.links['next']['url'], access_token)
-        toots = toots + response.json()
+        try:
+            response = get_toots(response.links['next']['url'], access_token)
+            toots = toots + response.json()
+        except Exception as ex:
+            print(f"Error getting timeline toots: {ex}")
 
     print(f"Found {len(toots)} toots in timeline")
 
@@ -317,13 +320,17 @@ def get_toot_context(server, toot_id, toot_url):
 def add_context_urls(server, access_token, context_urls, seen_urls):
     """add the given toot URLs to the server"""
     count = 0
+    failed = 0
     for url in context_urls:
         if url not in seen_urls:
-            add_context_url(url, server, access_token)
-            seen_urls.add(url)
-            count += 1
+            added = add_context_url(url, server, access_token)
+            if added is True:
+                seen_urls.add(url)
+                count += 1
+            else:
+                failed += 1
 
-    print(f"Added {count} new context toots")
+    print(f"Added {count} new context toots (with {failed} failures)")
 
 
 def add_context_url(url, server, access_token):
@@ -340,19 +347,22 @@ def add_context_url(url, server, access_token):
         print(
             f"Error adding url {search_url} to server {server}. Exception: {ex}"
         )
-        return
+        return False
 
     if resp.status_code == 200:
         print(f"Added context url {url}")
+        return True
     elif resp.status_code == 403:
         print(
             f"Error adding url {search_url} to server {server}. Status code: {resp.status_code}. "
             "Make sure you have the read:search scope enabled for your access token."
         )
+        return False
     else:
         print(
             f"Error adding url {search_url} to server {server}. Status code: {resp.status_code}"
         )
+        return False
 
 
 class OrderedSet:
