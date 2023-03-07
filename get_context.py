@@ -300,9 +300,13 @@ def get_toot_context(server, toot_id, toot_url):
         return []
 
     if resp.status_code == 200:
-        res = resp.json()
-        print(f"Got context for toot {toot_url}")
-        return (toot["url"] for toot in (res["ancestors"] + res["descendants"]))
+        try:
+            res = resp.json()
+            print(f"Got context for toot {toot_url}")
+            return (toot["url"] for toot in (res["ancestors"] + res["descendants"]))
+        except Exception as ex:
+            print(f"Error parsing context for toot {toot_url}. Exception: {ex}")
+        return []
 
     print(
         f"Error getting context for toot {toot_url}. Status code: {resp.status_code}"
