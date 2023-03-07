@@ -255,6 +255,9 @@ def parse_pleroma_url(url):
     if match is not None:
         server = match.group("server")
         url = get_redirect_url(url)
+        if url is None:
+            return None
+        
         match = re.match(r"/notice/(?P<toot_id>.*)", url)
         if match is not None:
             return (server, match.group("toot_id"))
@@ -271,7 +274,7 @@ def get_redirect_url(url):
         return None
 
     if resp.status_code == 200:
-        return None
+        return url
     elif resp.status_code == 302:
         redirect_url = resp.headers["Location"]
         print(f"Discovered redirect for URL {url}")
