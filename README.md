@@ -35,8 +35,8 @@ Either part can be disabled completely, and the values for `REPLY_INTERVAL_IN_HO
    4. Add the following Environment Variables:
       - `MASTODON_SERVER`: The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`
       - `HOME_TIMELINE_LENGTH`: An integer number. E.g. `200`. (See above for explanation.) Set to `0` to disable this part of the script.
-      - `REPLY_INTERVAL_IN_HOURS`: An integer number. E.g. `24`. (See above for explanation).
-4. Finally go to the Actions tab and enable the action. Set to `0` to disable this part of the script.
+      - `REPLY_INTERVAL_IN_HOURS`: An integer number. E.g. `24`. (See above for explanation). Set to `0` to disable this part of the script.
+4. Finally go to the Actions tab and enable the action.
 
 ## Acknowledgments
 
