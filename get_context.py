@@ -17,19 +17,20 @@ def pull_context(
     reply_interval_hours,
     max_home_timeline_length,
 ):
-    """pull the context toots of toots user replied to, from their
-    original server, and add them to the local server."""
-    user_ids = get_active_user_ids(server, access_token, reply_interval_hours)
-    reply_toots = get_all_reply_toots(
-        server, user_ids, access_token, seen_urls, reply_interval_hours
-    )
-    known_context_urls = get_all_known_context_urls(server, reply_toots)
-    seen_urls.update(known_context_urls)
-    replied_toot_ids = get_all_replied_toot_server_ids(
-        server, reply_toots, replied_toot_server_ids
-    )
-    context_urls = get_all_context_urls(server, replied_toot_ids)
-    add_context_urls(server, access_token, context_urls, seen_urls)
+    if reply_interval_hours > 0:
+        """pull the context toots of toots user replied to, from their
+        original server, and add them to the local server."""
+        user_ids = get_active_user_ids(server, access_token, reply_interval_hours)
+        reply_toots = get_all_reply_toots(
+            server, user_ids, access_token, seen_urls, reply_interval_hours
+        )
+        known_context_urls = get_all_known_context_urls(server, reply_toots)
+        seen_urls.update(known_context_urls)
+        replied_toot_ids = get_all_replied_toot_server_ids(
+            server, reply_toots, replied_toot_server_ids
+        )
+        context_urls = get_all_context_urls(server, replied_toot_ids)
+        add_context_urls(server, access_token, context_urls, seen_urls)
 
 
     if max_home_timeline_length > 0:
