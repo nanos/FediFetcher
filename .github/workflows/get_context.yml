@@ -11,11 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     environment: mastodon
     steps:
-      - run: |
+      - name: Get latest release
+        run: |
           curl -s https://api.github.com/repos/nanos/mastodon_get_replies/releases/latest | jq .zipball_url | xargs wget -O download.zip
           unzip -j download.zip
           mkdir artifacts
-      - uses: actions/setup-python@v4
+          ls -lR
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
          python-version: '3.10' 
          cache: 'pip' # caching pip dependencies
@@ -27,6 +30,8 @@ jobs:
           workflow: get_context.yml
           if_no_artifact_found: warn
           path: artifacts
+      - name: Get Directory structure
+        run: ls -lR
       - run: python get_context.py ${{ secrets.ACCESS_TOKEN }} ${{ vars.MASTODON_SERVER }} ${{ vars.REPLY_INTERVAL_IN_HOURS }} ${{ vars.HOME_TIMELINE_LENGTH }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
