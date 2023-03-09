@@ -495,7 +495,7 @@ Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours>
     )
 
     with open(SEEN_URLS_FILE, "w", encoding="utf-8") as f:
-        f.write("\n".join(list(SEEN_URLS)[:10000]))
+        f.write("\n".join(list(SEEN_URLS)[-10000:]))
 
     with open(REPLIED_TOOT_SERVER_IDS_FILE, "w", encoding="utf-8") as f:
-        json.dump(dict(list(REPLIED_TOOT_SERVER_IDS.items())[:10000]), f)
+        json.dump(dict(list(REPLIED_TOOT_SERVER_IDS.items())[-10000:]), f)
