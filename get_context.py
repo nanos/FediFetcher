@@ -18,6 +18,8 @@ def pull_context(
     reply_interval_hours,
     max_home_timeline_length,
 ):
+    
+    parsed_urls = {}
 
     if reply_interval_hours > 0:
         """pull the context toots of toots user replied to, from their
@@ -26,10 +28,10 @@ def pull_context(
         reply_toots = get_all_reply_toots(
             server, user_ids, access_token, seen_urls, reply_interval_hours
         )
-        known_context_urls = get_all_known_context_urls(server, reply_toots)
+        known_context_urls = get_all_known_context_urls(server, reply_toots,parsed_urls)
         seen_urls.update(known_context_urls)
         replied_toot_ids = get_all_replied_toot_server_ids(
-            server, reply_toots, replied_toot_server_ids
+            server, reply_toots, replied_toot_server_ids, parsed_urls
         )
         context_urls = get_all_context_urls(server, replied_toot_ids)
         add_context_urls(server, access_token, context_urls, seen_urls)
@@ -38,7 +40,7 @@ def pull_context(
     if max_home_timeline_length > 0:
         """Do the same with any toots on the key owner's home timeline """
         timeline_toots = get_timeline(server, access_token, max_home_timeline_length)
-        known_context_urls = get_all_known_context_urls(server, timeline_toots)
+        known_context_urls = get_all_known_context_urls(server, timeline_toots,parsed_urls)
         add_context_urls(server, access_token, known_context_urls, seen_urls)
 
 def get_timeline(server, access_token, max):
@@ -187,15 +189,15 @@ def get_reply_toots(user_id, server, access_token, seen_urls, reply_since):
     )
 
 
-def get_all_known_context_urls(server, reply_toots):
+def get_all_known_context_urls(server, reply_toots,parsed_urls):
     """get the context toots of the given toots from their original server"""
     known_context_urls = set(
         filter(
             lambda url: not url.startswith(f"https://{server}/"),
             itertools.chain.from_iterable(
-                get_toot_context(*parse_url(toot["url"] if toot["reblog"] is None else toot["reblog"]["url"]), toot["url"])
+                get_toot_context(*parse_url(toot["url"] if toot["reblog"] is None else toot["reblog"]["url"],parsed_urls), toot["url"])
                 for toot in filter(
-                    toot_has_parseable_url,
+                    lambda toot: toot_has_parseable_url(toot,parsed_urls),
                     reply_toots
                 )            
             ),
@@ -205,27 +207,27 @@ def get_all_known_context_urls(server, reply_toots):
     return known_context_urls
 
 
-def toot_has_parseable_url(toot):
-    parsed = parse_url(toot["url"] if toot["reblog"] is None else toot["reblog"]["url"])
+def toot_has_parseable_url(toot,parsed_urls):
+    parsed = parse_url(toot["url"] if toot["reblog"] is None else toot["reblog"]["url"],parsed_urls)
     if(parsed is None) :
         return False
     return True
                 
 
 def get_all_replied_toot_server_ids(
-    server, reply_toots, replied_toot_server_ids
+    server, reply_toots, replied_toot_server_ids, parsed_urls
 ):
     """get the server and ID of the toots the given toots replied to"""
     return filter(
         lambda x: x is not None,
         (
-            get_replied_toot_server_id(server, toot, replied_toot_server_ids)
+            get_replied_toot_server_id(server, toot, replied_toot_server_ids, parsed_urls)
             for toot in reply_toots
         ),
     )
 
 
-def get_replied_toot_server_id(server, toot, replied_toot_server_ids):
+def get_replied_toot_server_id(server, toot, replied_toot_server_ids,parsed_urls):
     """get the server and ID of the toot the given toot replied to"""
     in_reply_to_id = toot["in_reply_to_id"]
     in_reply_to_account_id = toot["in_reply_to_account_id"]
@@ -248,7 +250,7 @@ def get_replied_toot_server_id(server, toot, replied_toot_server_ids):
     if url is None:
         return None
 
-    match = parse_url(url)
+    match = parse_url(url,parsed_urls)
     if match is not None:
         replied_toot_server_ids[o_url] = (url, match)
         return (url, match)
@@ -257,17 +259,22 @@ def get_replied_toot_server_id(server, toot, replied_toot_server_ids):
     replied_toot_server_ids[o_url] = None
     return None
 
-def parse_url(url):
-    match = parse_mastodon_url(url)
-    if match is not None:
-        return match
+def parse_url(url, parsed_urls):
+    if url not in parsed_urls:
+        match = parse_mastodon_url(url)
+        if match is not None:
+            parsed_urls[url] = match
+    
+    if url not in parsed_urls:
+        match = parse_pleroma_url(url)
+        if match is not None:
+            parsed_urls[url] = match
 
-    match = parse_pleroma_url(url)
-    if match is not None:
-        return match
-
-    print(f"Error parsing toot URL {url}")
-    return None
+    if url not in parsed_urls:
+        print(f"Error parsing toot URL {url}")
+        parsed_urls[url] = None
+    
+    return parsed_urls[url]
 
 def parse_mastodon_url(url):
     """parse a Mastodon URL and return the server and ID"""
