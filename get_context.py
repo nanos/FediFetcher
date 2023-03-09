@@ -45,17 +45,35 @@ def get_timeline(server, access_token, max):
     """Get all post in the user's home timeline"""
 
     url = f"https://{server}/api/v1/timelines/home"
-    
-    response = get_toots(url, access_token)
-    toots = response.json()
 
-    # Paginate as needed
-    while len(toots) < max:
-        try:
+    try:
+    
+        response = get_toots(url, access_token)
+
+        if response.status_code == 200:
+            toots = response.json()
+        elif response.status_code == 401:
+            raise Exception(
+                f"Error getting URL {url}. Status code: {response.status_code}. "
+                "Ensure your access token is correct"
+            )
+        elif response.status_code == 403:
+            raise Exception(
+                f"Error getting URL {url}. Status code: {response.status_code}. "
+                "Make sure you have the read:statuses scope enabled for your access token."
+            )
+        else:
+            raise Exception(
+                f"Error getting URL {url}. Status code: {response.status_code}"
+            )
+
+        # Paginate as needed
+        while len(toots) < max:
             response = get_toots(response.links['next']['url'], access_token)
             toots = toots + response.json()
-        except Exception as ex:
-            print(f"Error getting timeline toots: {ex}")
+    except Exception as ex:
+        print(f"Error getting timeline toots: {ex}")
+        sys.exit(1)
 
     print(f"Found {len(toots)} toots in timeline")
 
@@ -68,10 +86,15 @@ def get_toots(url, access_token):
 
     if response.status_code == 200:
         return response
+    elif response.status_code == 401:
+        raise Exception(
+            f"Error getting URL {url}. Status code: {response.status_code}. "
+            "It looks like your access token is incorrect."
+        )
     elif response.status_code == 403:
         raise Exception(
             f"Error getting URL {url}. Status code: {response.status_code}. "
-            "Make sure you have the admin:read:accounts scope enabled for your access token."
+            "Make sure you have the read:statuses scope enabled for your access token."
         )
     else:
         raise Exception(
@@ -94,6 +117,11 @@ def get_active_user_ids(server, access_token, reply_interval_hours):
                 if last_active > since:
                     print(f"Found active user: {user['username']}")
                     yield user["id"]
+    elif resp.status_code == 401:
+        raise Exception(
+            f"Error getting user IDs on server {server}. Status code: {resp.status_code}. "
+            "Ensure your access token is correct"
+        )
     elif resp.status_code == 403:
         raise Exception(
             f"Error getting user IDs on server {server}. Status code: {resp.status_code}. "
