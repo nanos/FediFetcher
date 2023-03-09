@@ -11,7 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: mastodon
     steps:
-      - uses: actions/checkout@v3
+      - run: |
+          curl -s https://api.github.com/repos/nanos/mastodon_get_replies/releases/latest | jq .zipball_url | xargs wget -O download.zip
+          unzip -j download.zip
+          mkdir artifacts
       - uses: actions/setup-python@v4
         with:
          python-version: '3.10' 
