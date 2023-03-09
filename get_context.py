@@ -68,7 +68,7 @@ def get_timeline(server, access_token, max):
             )
 
         # Paginate as needed
-        while len(toots) < max:
+        while len(toots) < max and 'next' in response.links:
             response = get_toots(response.links['next']['url'], access_token)
             toots = toots + response.json()
     except Exception as ex:
