@@ -9,7 +9,6 @@ import sys
 import requests
 import time
 
-
 def pull_context(
     server,
     access_token,
@@ -83,7 +82,10 @@ def get_timeline(server, access_token, max):
     
 def get_toots(url, access_token):
     response = requests.get(
-        url, headers={"Authorization": f"Bearer {access_token}"}, timeout=5
+        url, headers={
+            "Authorization": f"Bearer {access_token}",
+            'User-Agent': 'mastodon_get_replies (https://paste.thms.uk/mastodon_get_replies.md/markup)'
+        }, timeout=5
     )
 
     if response.status_code == 200:
@@ -109,7 +111,10 @@ def get_active_user_ids(server, access_token, reply_interval_hours):
     since = datetime.now() - timedelta(days=reply_interval_hours / 24 + 1)
     url = f"https://{server}/api/v1/admin/accounts"
     resp = requests.get(
-        url, headers={"Authorization": f"Bearer {access_token}"}, timeout=5
+        url, headers={
+            "Authorization": f"Bearer {access_token}",
+            'User-Agent': 'mastodon_get_replies (https://paste.thms.uk/mastodon_get_replies.md/markup)'
+        }, timeout=5
     )
     if resp.status_code == 200:
         for user in resp.json():
@@ -158,7 +163,10 @@ def get_reply_toots(user_id, server, access_token, seen_urls, reply_since):
 
     try:
         resp = requests.get(
-            url, headers={"Authorization": f"Bearer {access_token}"}, timeout=5
+            url, headers={
+                "Authorization": f"Bearer {access_token}",
+                'User-Agent': 'mastodon_get_replies (https://paste.thms.uk/mastodon_get_replies.md/markup)'
+            }, timeout=5
         )
     except Exception as ex:
         print(
@@ -305,7 +313,9 @@ def parse_pleroma_url(url):
 def get_redirect_url(url):
     """get the URL given URL redirects to"""
     try:
-        resp = requests.head(url, allow_redirects=False, timeout=5)
+        resp = requests.head(url, allow_redirects=False, timeout=5,headers={
+            'User-Agent': 'mastodon_get_replies (https://paste.thms.uk/mastodon_get_replies.md/markup)'
+        })
     except Exception as ex:
         print(f"Error getting redirect URL for URL {url}. Exception: {ex}")
         return None
@@ -338,7 +348,9 @@ def get_toot_context(server, toot_id, toot_url):
     """get the URLs of the context toots of the given toot"""
     url = f"https://{server}/api/v1/statuses/{toot_id}/context"
     try:
-        resp = requests.get(url, timeout=5)
+        resp = requests.get(url, timeout=5,headers={
+            'User-Agent': 'mastodon_get_replies (https://paste.thms.uk/mastodon_get_replies.md/markup)'
+        })
     except Exception as ex:
         print(f"Error getting context for toot {toot_url}. Exception: {ex}")
         return []
@@ -386,7 +398,10 @@ def add_context_url(url, server, access_token):
     try:
         resp = requests.get(
             search_url,
-            headers={"Authorization": f"Bearer {access_token}"},
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                'User-Agent': 'mastodon_get_replies (https://paste.thms.uk/mastodon_get_replies.md/markup)'
+            },
             timeout=5,
         )
     except Exception as ex:
