@@ -49,9 +49,9 @@ def pull_context(
         print(f"Getting posts from {backfill_followings_for_user}'s last {max_followings} followings")
         user_id = get_user_id(server, backfill_followings_for_user)
         followings = get_new_followings(server, user_id, max_followings, known_followings)
-        add_following_posts(server, access_token, followings, known_followings, seen_urls, parsed_urls)
+        add_following_posts(server, access_token, followings, known_followings, seen_urls)
 
-def add_following_posts(server, access_token, followings, know_followings, seen_urls, parsed_urls):
+def add_following_posts(server, access_token, followings, know_followings, seen_urls):
     for user in followings:
         posts = get_user_posts(user, know_followings, server)
 
@@ -74,6 +74,7 @@ def get_user_posts(user, know_followings, server):
     parsed_url = parse_user_url(user['url'])
 
     if parsed_url == None:
+        # We are adding it as 'known' anyway, because we won't be able to fix this.
         know_followings.add(user['acct'])
         return None
     
@@ -88,9 +89,8 @@ def get_user_posts(user, know_followings, server):
         print(f"Error getting user ID for user {user['acct']}: {ex}")
         return None
     
-    url = f"https://{parsed_url[0]}/api/v1/accounts/{user_id}/statuses?limit=40"
-
     try:
+        url = f"https://{parsed_url[0]}/api/v1/accounts/{user_id}/statuses?limit=40"
         response = requests.get(url, headers={
                 'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
             }, timeout=5
@@ -111,25 +111,23 @@ def get_user_posts(user, know_followings, server):
         return None
 
 def get_new_followings(server, user_id, max, known_followings):
+    """Get any new followings for the specified user, up to the max number provided"""
+
     url = f"https://{server}/api/v1/accounts/{user_id}/following?limit={max}"
-
-    following = []
-
-    response = requests.get(url, headers={
+    response = response = requests.get(url, headers={
             'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
         }, timeout=5
     )
-
-    following = following + response.json()
+    following = response.json()
 
     while len(following) < max and 'next' in response.links:
-        response = requests.get(url, headers={
+        response = requests.get(response.links['next']['url'], headers={
                 'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
             }, timeout=5)
 
         following = following + response.json()
-    
 
+    # Remove any we already know about    
     new_followings = list(filter(
         lambda user: user['acct'] not in known_followings,
         following
@@ -140,9 +138,8 @@ def get_new_followings(server, user_id, max, known_followings):
     return new_followings
     
 
-
 def get_user_id(server, user):
-    # Get a list of the last max followings for the user
+    """Get the user id from the server, using a username"""
     url = f"https://{server}/api/v1/accounts/lookup?acct={user}"
 
     
@@ -156,7 +153,7 @@ def get_user_id(server, user):
         return response.json()['id'] 
     elif response.status_code == 404:
         raise Exception(
-            f"User {user} was not found. Try to supply just the local part of the username."
+            f"User {user} was not found on server {server}."
         )
     else:
         raise Exception(
@@ -610,7 +607,7 @@ class OrderedSet:
 
 if __name__ == "__main__":
     HELP_MESSAGE = """
-Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours> <home_timeline_length>
+Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours> <home_timeline_length> <max_followings_count> <user>
 
  - <access_token>: The access token can be generated at https://<server>/settings/applications,
    and must have read:search, read:statuses and admin:read:accounts scopes.
@@ -618,6 +615,9 @@ Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours>
  - <reply_interval_in_hours>: Only look at posts that have received replies in this period
  - <home_timeline_length>: Also look for replies to posts in the API-Key owner's home timeline, up to 
    this many posts
+ - <max_followings_count>: If provided, we'll also backfill posts for new accounts followed by <user>.
+   We'll backfill at most this many followings' posts.
+ - <user>: Use together with <max_followings_count> to tell us which user's followings we should backfill
 
 
 """
