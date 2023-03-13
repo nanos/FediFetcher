@@ -91,10 +91,7 @@ def get_user_posts(user, know_followings, server):
     
     try:
         url = f"https://{parsed_url[0]}/api/v1/accounts/{user_id}/statuses?limit=40"
-        response = requests.get(url, headers={
-                'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
-            }, timeout=5
-        )
+        response = get(url)
 
         if(response.status_code == 200):
             return response.json()
@@ -113,18 +110,11 @@ def get_user_posts(user, know_followings, server):
 def get_new_followings(server, user_id, max, known_followings):
     """Get any new followings for the specified user, up to the max number provided"""
 
-    url = f"https://{server}/api/v1/accounts/{user_id}/following?limit={max}"
-    response = response = requests.get(url, headers={
-            'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
-        }, timeout=5
-    )
+    response = get(f"https://{server}/api/v1/accounts/{user_id}/following?limit={max}")
     following = response.json()
 
     while len(following) < max and 'next' in response.links:
-        response = requests.get(response.links['next']['url'], headers={
-                'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
-            }, timeout=5)
-
+        response = get(response.links['next']['url'])
         following = following + response.json()
 
     # Remove any we already know about    
@@ -143,11 +133,7 @@ def get_user_id(server, user):
     url = f"https://{server}/api/v1/accounts/lookup?acct={user}"
 
     
-    response = requests.get(
-        url, headers={
-            'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
-        }, timeout=5
-    )
+    response = get(url)
 
     if response.status_code == 200:
         return response.json()['id'] 
@@ -200,12 +186,9 @@ def get_timeline(server, access_token, max):
     return toots
     
 def get_toots(url, access_token):
-    response = requests.get(
-        url, headers={
-            "Authorization": f"Bearer {access_token}",
-            'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
-        }, timeout=5
-    )
+    response = get( url, headers={
+        "Authorization": f"Bearer {access_token}",
+    })
 
     if response.status_code == 200:
         return response
@@ -229,12 +212,9 @@ def get_active_user_ids(server, access_token, reply_interval_hours):
        time interval"""
     since = datetime.now() - timedelta(days=reply_interval_hours / 24 + 1)
     url = f"https://{server}/api/v1/admin/accounts"
-    resp = requests.get(
-        url, headers={
-            "Authorization": f"Bearer {access_token}",
-            'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
-        }, timeout=5
-    )
+    resp = get(url, headers={
+        "Authorization": f"Bearer {access_token}",
+    })
     if resp.status_code == 200:
         for user in resp.json():
             last_status_at = user["account"]["last_status_at"]
@@ -281,12 +261,9 @@ def get_reply_toots(user_id, server, access_token, seen_urls, reply_since):
     url = f"https://{server}/api/v1/accounts/{user_id}/statuses?exclude_replies=false&limit=40"
 
     try:
-        resp = requests.get(
-            url, headers={
-                "Authorization": f"Bearer {access_token}",
-                'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
-            }, timeout=5
-        )
+        resp = get(url, headers={
+            "Authorization": f"Bearer {access_token}",
+        })
     except Exception as ex:
         print(
             f"Error getting replies for user {user_id} on server {server}: {ex}"
@@ -496,9 +473,7 @@ def get_toot_context(server, toot_id, toot_url):
     """get the URLs of the context toots of the given toot"""
     url = f"https://{server}/api/v1/statuses/{toot_id}/context"
     try:
-        resp = requests.get(url, timeout=5,headers={
-            'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
-        })
+        resp = get(url)
     except Exception as ex:
         print(f"Error getting context for toot {toot_url}. Exception: {ex}")
         return []
@@ -544,14 +519,9 @@ def add_context_url(url, server, access_token):
     search_url = f"https://{server}/api/v2/search?q={url}&resolve=true&limit=1"
 
     try:
-        resp = requests.get(
-            search_url,
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
-            },
-            timeout=5,
-        )
+        resp = get(search_url, headers={
+            "Authorization": f"Bearer {access_token}",
+        })
     except Exception as ex:
         print(
             f"Error adding url {search_url} to server {server}. Exception: {ex}"
@@ -577,6 +547,23 @@ def add_context_url(url, server, access_token):
             f"Error adding url {search_url} to server {server}. Status code: {resp.status_code}"
         )
         return False
+    
+def get(url, headers = {}, timeout = 5, max_tries = 5):
+    """A simple wrapper to make a get request while providing our user agent, and respecting rate limits"""
+    h = headers.copy()
+    if 'User-Agent' not in h:
+        h['User-Agent'] = 'mastodon_get_replies (https://go.thms.uk/mgr)'
+        
+    response = requests.get( url, headers= h, timeout=timeout)
+    if response.status_code == 429:
+        if max_tries > 0:
+            reset = datetime.strptime(response.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
+            print(f"Rate Limit hit requesting {url}. Waiting to retry at {response.headers['x-ratelimit-reset']}")
+            time.sleep((reset - datetime.now()).total_seconds() + 1)
+            return get(url, headers, timeout, max_tries - 1)
+        
+        raise Exception(f"Maximum number of retries exceeded for rate limited request {url}")
+    return response
 
 
 class OrderedSet:
