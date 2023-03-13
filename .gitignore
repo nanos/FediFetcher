@@ -1,3 +1,2 @@
 .vscode/launch.json
-artifacts/replied_toot_server_ids
-artifacts/seen_urls
+artifacts/*

@@ -16,6 +16,9 @@ def pull_context(
     replied_toot_server_ids,
     reply_interval_hours,
     max_home_timeline_length,
+    max_followings,
+    backfill_followings_for_user,
+    known_followings
 ):
     
     parsed_urls = {}
@@ -41,6 +44,125 @@ def pull_context(
         timeline_toots = get_timeline(server, access_token, max_home_timeline_length)
         known_context_urls = get_all_known_context_urls(server, timeline_toots,parsed_urls)
         add_context_urls(server, access_token, known_context_urls, seen_urls)
+
+    if max_followings > 0 and backfill_followings_for_user != '':
+        print(f"Getting posts from {backfill_followings_for_user}'s last {max_followings} followings")
+        user_id = get_user_id(server, backfill_followings_for_user)
+        followings = get_new_followings(server, user_id, max_followings, known_followings)
+        add_following_posts(server, access_token, followings, known_followings, seen_urls, parsed_urls)
+
+def add_following_posts(server, access_token, followings, know_followings, seen_urls, parsed_urls):
+    for user in followings:
+        posts = get_user_posts(user, know_followings, server)
+
+        if(posts != None):
+            count = 0
+            failed = 0
+            for post in posts:
+                if post['url'] != None and post['url'] not in seen_urls:
+                    added = add_context_url(post['url'], server, access_token)
+                    if added is True:
+                        seen_urls.add(post['url'])
+                        count += 1
+                    else:
+                        failed += 1
+            print(f"Added {count} posts for user {user['acct']} with {failed} errors")
+            if failed == 0:
+                know_followings.add(user['acct'])
+
+def get_user_posts(user, know_followings, server):
+    parsed_url = parse_user_url(user['url'])
+
+    if parsed_url == None:
+        know_followings.add(user['acct'])
+        return None
+    
+    if(parsed_url[0] == server):
+        print(f"{user['acct']} is a local user. Skip")
+        know_followings.add(user['acct'])
+        return None
+    
+    try:
+        user_id = get_user_id(parsed_url[0], parsed_url[1])
+    except Exception as ex:
+        print(f"Error getting user ID for user {user['acct']}: {ex}")
+        return None
+    
+    url = f"https://{parsed_url[0]}/api/v1/accounts/{user_id}/statuses?limit=40"
+
+    try:
+        response = requests.get(url, headers={
+                'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
+            }, timeout=5
+        )
+
+        if(response.status_code == 200):
+            return response.json()
+        elif response.status_code == 404:
+            raise Exception(
+                f"User {user['acct']} was not found on server {parsed_url[0]}"
+            )
+        else:
+            raise Exception(
+                f"Error getting URL {url}. Status code: {response.status_code}"
+            )
+    except Exception as ex:
+        print(f"Error getting posts for user {user['acct']}: {ex}")
+        return None
+
+def get_new_followings(server, user_id, max, known_followings):
+    url = f"https://{server}/api/v1/accounts/{user_id}/following?limit={max}"
+
+    following = []
+
+    response = requests.get(url, headers={
+            'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
+        }, timeout=5
+    )
+
+    following = following + response.json()
+
+    while len(following) < max and 'next' in response.links:
+        response = requests.get(url, headers={
+                'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
+            }, timeout=5)
+
+        following = following + response.json()
+    
+
+    new_followings = list(filter(
+        lambda user: user['acct'] not in known_followings,
+        following
+    ))
+    
+    print(f"Got {len(following)} followings, {len(new_followings)} of which are new")
+        
+    return new_followings
+    
+
+
+def get_user_id(server, user):
+    # Get a list of the last max followings for the user
+    url = f"https://{server}/api/v1/accounts/lookup?acct={user}"
+
+    
+    response = requests.get(
+        url, headers={
+            'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
+        }, timeout=5
+    )
+
+    if response.status_code == 200:
+        return response.json()['id'] 
+    elif response.status_code == 404:
+        raise Exception(
+            f"User {user} was not found. Try to supply just the local part of the username."
+        )
+    else:
+        raise Exception(
+            f"Error getting URL {url}. Status code: {response.status_code}"
+        )
+
 
 def get_timeline(server, access_token, max):
     """Get all post in the user's home timeline"""
@@ -267,6 +389,19 @@ def get_replied_toot_server_id(server, toot, replied_toot_server_ids,parsed_urls
     replied_toot_server_ids[o_url] = None
     return None
 
+def parse_user_url(url):
+    match = parse_mastodon_profile_url(url)
+    if match is not None:
+        return match
+    
+    match = parse_pleroma_profile_url(url)
+    if match is not None:
+        return match
+
+    print(f"Error parsing Profile URL {url}")
+    
+    return None
+
 def parse_url(url, parsed_urls):
     if url not in parsed_urls:
         match = parse_mastodon_url(url)
@@ -283,6 +418,15 @@ def parse_url(url, parsed_urls):
         parsed_urls[url] = None
     
     return parsed_urls[url]
+
+def parse_mastodon_profile_url(url):
+    """parse a Mastodon Profile URL and return the server and username"""
+    match = re.match(
+        r"https://(?P<server>.*)/@(?P<username>.*)", url
+    )
+    if match is not None:
+        return (match.group("server"), match.group("username"))
+    return None
 
 def parse_mastodon_url(url):
     """parse a Mastodon URL and return the server and ID"""
@@ -307,6 +451,13 @@ def parse_pleroma_url(url):
         if match is not None:
             return (server, match.group("toot_id"))
         return None
+    return None
+
+def parse_pleroma_profile_url(url):
+    """parse a Pleroma Profile URL and return the server and username"""
+    match = re.match(r"https://(?P<server>.*)/users/(?P<username>.*)", url)
+    if match is not None:
+        return (match.group("server"), match.group("username"))
     return None
 
 
@@ -481,6 +632,15 @@ Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours>
     SERVER = sys.argv[2]
     REPLY_INTERVAL_IN_HOURS = int(sys.argv[3])
     MAX_HOME_TIMELINE_LENGTH = int(sys.argv[4])
+    if len(sys.argv) > 5:
+        MAX_FOLLOWINGS = int(sys.argv[5])
+    else:
+        MAX_FOLLOWINGS = 0
+
+    if len(sys.argv) > 6:
+        BACKFILL_FOLLOWINGS_FOR_USER = sys.argv[6]
+    else:
+        BACKFILL_FOLLOWINGS_FOR_USER = ''
 
     print(
         f"Getting last {REPLY_INTERVAL_IN_HOURS} hrs of replies, and latest {MAX_HOME_TIMELINE_LENGTH} posts in home timeline from {SERVER}"
@@ -488,6 +648,7 @@ Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours>
 
     SEEN_URLS_FILE = "artifacts/seen_urls"
     REPLIED_TOOT_SERVER_IDS_FILE = "artifacts/replied_toot_server_ids"
+    KNOWN_FOLLOWINGS_FILE = "artifacts/known_followings"
 
 
     SEEN_URLS = OrderedSet([])
@@ -500,6 +661,11 @@ Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours>
         with open(REPLIED_TOOT_SERVER_IDS_FILE, "r", encoding="utf-8") as f:
             REPLIED_TOOT_SERVER_IDS = json.load(f)
 
+    KNOWN_FOLLOWINGS = OrderedSet([])
+    if os.path.exists(KNOWN_FOLLOWINGS_FILE):
+        with open(KNOWN_FOLLOWINGS_FILE, "r", encoding="utf-8") as f:
+            KNOWN_FOLLOWINGS = OrderedSet(f.read().splitlines())
+
     pull_context(
         SERVER,
         ACCESS_TOKEN,
@@ -507,7 +673,13 @@ Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours>
         REPLIED_TOOT_SERVER_IDS,
         REPLY_INTERVAL_IN_HOURS,
         MAX_HOME_TIMELINE_LENGTH,
+        MAX_FOLLOWINGS,
+        BACKFILL_FOLLOWINGS_FOR_USER,
+        KNOWN_FOLLOWINGS
     )
+
+    with open(KNOWN_FOLLOWINGS_FILE, "w", encoding="utf-8") as f:
+        f.write("\n".join(list(KNOWN_FOLLOWINGS)[-10000:]))
 
     with open(SEEN_URLS_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(list(SEEN_URLS)[-10000:]))
