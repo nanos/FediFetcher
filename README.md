@@ -3,7 +3,7 @@
 This GitHub repository provides a GitHub action runs every 10 mins, and has two parts:
 
 1. It can pull remote replies into your instance, using the Mastodon API. That part itself has two parts:
-   2. It gets remote replies to posts that users on your instance have already replied to during the last `REPLY_INTERVAL_IN_HOURS` hours, and adds them to your own server.
+   1. It gets remote replies to posts that users on your instance have already replied to during the last `REPLY_INTERVAL_IN_HOURS` hours, and adds them to your own server.
    2. It gets remote replies to the last `HOME_TIMELINE_LENGTH` posts from your home timeline, and adds them to your own server.
 2. It can also backfill posts from the last `MAX_FOLLOWINGS` users that you have followed.
 
