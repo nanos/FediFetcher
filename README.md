@@ -2,10 +2,10 @@
 
 This GitHub repository provides a GitHub action runs every 10 mins, and has two parts:
 
-1. It can pull remote replies into your instance, using the Mastodon API. See [Pull missing responses into Mastodon](https://blog.thms.uk/2023/03/pull-missing-responses-into-mastodon?utm_source=github) for details. That part itself has two parts:
+1. It can [pull remote replies into your instance](https://blog.thms.uk/2023/03/pull-missing-responses-into-mastodon?utm_source=github), using the Mastodon API. That part itself has two parts:
    1. It gets remote replies to posts that users on your instance have already replied to during the last `REPLY_INTERVAL_IN_HOURS` hours, and adds them to your own server.
    2. It gets remote replies to the last `HOME_TIMELINE_LENGTH` posts from your home timeline, and adds them to your own server.
-2. It can also backfill posts from the last `MAX_FOLLOWINGS` users that you have followed. See [Pull missing posts from recently followed accounts into Mastodon](https://blog.thms.uk/2023/03/backfill-recently-followed-accounts?utm_source=github) for details.
+2. It can also [backfill posts](https://blog.thms.uk/2023/03/backfill-recently-followed-accounts?utm_source=github) from the last `MAX_FOLLOWINGS` users that you have followed.
 
 Each part can be disabled completely, and all of the values are configurable.
 
