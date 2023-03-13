@@ -32,7 +32,7 @@ jobs:
           path: artifacts
       - name: Get Directory structure
         run: ls -lR
-      - run: python get_context.py ${{ secrets.ACCESS_TOKEN }} ${{ vars.MASTODON_SERVER }} ${{ vars.REPLY_INTERVAL_IN_HOURS }} ${{ vars.HOME_TIMELINE_LENGTH }}
+      - run: python get_context.py ${{ secrets.ACCESS_TOKEN }} ${{ vars.MASTODON_SERVER }} ${{ vars.REPLY_INTERVAL_IN_HOURS }} ${{ vars.HOME_TIMELINE_LENGTH }} ${{ vars.MAX_FOLLOWINGS }} ${{ vars.USER }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
