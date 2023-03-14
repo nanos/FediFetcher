@@ -53,7 +53,7 @@ For full context and discussion on why this is needed, read the following two bl
 If you want to, you can of course also run this script locally as a cron job:
 
 1. To get started, clone this repository. (If you'd rather not clone the full repository, you can simply download the `get_context.py` file, but don't forget to create a directory called `artifacts` in the same directory: The script expects this directory to be present, and stores information about posts it has already pushed into your instance in that directory, to avoid pushing the same posts over and over again.)
-2. Then simply run this script like so: `python3 get_context.py <ACCESS_TOKEN> <MASTODON_SERVER> <REPLY_INTERVAL_IN_HOURS> <HOME_TIMELINE_LENGTH> <MAX_FOLLOWINGS> <USER>` (the final two parameters can be omitted, if you are not interested).
+2. Then simply run this script like so: `python3 get_context.py <ACCESS_TOKEN> <MASTODON_SERVER> <REPLY_INTERVAL_IN_HOURS> <HOME_TIMELINE_LENGTH> <MAX_FOLLOWINGS> <USER>` (See the section above for an explanation of these parameters. The final two parameters can be omitted, if you are not interested.)
 
 When setting up your cronjob, do make sure you are setting the interval long enough that two runs of the script don't overlap though! Running this script with overlapping will have unpleasant results ...
 
