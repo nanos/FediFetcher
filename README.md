@@ -57,6 +57,8 @@ If you want to, you can of course also run this script locally as a cron job:
 
 When setting up your cronjob, do make sure you are setting the interval long enough that two runs of the script don't overlap though! Running this script with overlapping will have unpleasant results ...
 
+If you are running this script locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be singificantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
+
 ## Acknowledgments
 
 This script is mostly taken from [Abhinav Sarkar](https://notes.abhinavsarkar.net/2023/mastodon-context), with just some additions and alterations. Thank you Abhinav!
