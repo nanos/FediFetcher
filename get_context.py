@@ -47,13 +47,13 @@ def pull_context(
         add_context_urls(server, access_token, known_context_urls, seen_urls)
 
     if max_followings > 0 and backfill_followings_for_user != '':
-        print(f"Getting posts from {backfill_followings_for_user}'s last {max_followings} followings")
+        log(f"Getting posts from {backfill_followings_for_user}'s last {max_followings} followings")
         user_id = get_user_id(server, backfill_followings_for_user)
         followings = get_new_followings(server, user_id, max_followings, known_followings)
         add_following_posts(server, access_token, followings, known_followings, seen_urls)
     
     if max_followers > 0 and backfill_followings_for_user != '':
-        print(f"Getting posts from {backfill_followings_for_user}'s last {max_followers} followers")
+        log(f"Getting posts from {backfill_followings_for_user}'s last {max_followers} followers")
         user_id = get_user_id(server, backfill_followings_for_user)
         followers = get_new_followers(server, user_id, max_followers, known_followings)
         add_following_posts(server, access_token, followers, known_followings, seen_urls)
@@ -73,7 +73,7 @@ def add_following_posts(server, access_token, followings, know_followings, seen_
                         count += 1
                     else:
                         failed += 1
-            print(f"Added {count} posts for user {user['acct']} with {failed} errors")
+            log(f"Added {count} posts for user {user['acct']} with {failed} errors")
             if failed == 0:
                 know_followings.add(user['acct'])
 
@@ -86,14 +86,14 @@ def get_user_posts(user, know_followings, server):
         return None
     
     if(parsed_url[0] == server):
-        print(f"{user['acct']} is a local user. Skip")
+        log(f"{user['acct']} is a local user. Skip")
         know_followings.add(user['acct'])
         return None
     
     try:
         user_id = get_user_id(parsed_url[0], parsed_url[1])
     except Exception as ex:
-        print(f"Error getting user ID for user {user['acct']}: {ex}")
+        log(f"Error getting user ID for user {user['acct']}: {ex}")
         return None
     
     try:
@@ -111,7 +111,7 @@ def get_user_posts(user, know_followings, server):
                 f"Error getting URL {url}. Status code: {response.status_code}"
             )
     except Exception as ex:
-        print(f"Error getting posts for user {user['acct']}: {ex}")
+        log(f"Error getting posts for user {user['acct']}: {ex}")
         return None
 
 def get_new_followers(server, user_id, max, known_followers):
@@ -130,7 +130,7 @@ def get_new_followers(server, user_id, max, known_followers):
         followers
     ))
     
-    print(f"Got {len(followers)} followers, {len(new_followers)} of which are new")
+    log(f"Got {len(followers)} followers, {len(new_followers)} of which are new")
         
     return new_followers
 
@@ -150,7 +150,7 @@ def get_new_followings(server, user_id, max, known_followings):
         following
     ))
     
-    print(f"Got {len(following)} followings, {len(new_followings)} of which are new")
+    log(f"Got {len(following)} followings, {len(new_followings)} of which are new")
         
     return new_followings
     
@@ -205,10 +205,10 @@ def get_timeline(server, access_token, max):
             response = get_toots(response.links['next']['url'], access_token)
             toots = toots + response.json()
     except Exception as ex:
-        print(f"Error getting timeline toots: {ex}")
+        log(f"Error getting timeline toots: {ex}")
         sys.exit(1)
 
-    print(f"Found {len(toots)} toots in timeline")
+    log(f"Found {len(toots)} toots in timeline")
 
     return toots
     
@@ -248,7 +248,7 @@ def get_active_user_ids(server, access_token, reply_interval_hours):
             if last_status_at is not None:
                 last_active = datetime.strptime(last_status_at, "%Y-%m-%d")
                 if last_active > since:
-                    print(f"Found active user: {user['username']}")
+                    log(f"Found active user: {user['username']}")
                     yield user["id"]
     elif resp.status_code == 401:
         raise Exception(
@@ -279,7 +279,7 @@ def get_all_reply_toots(
             for user_id in user_ids
         )
     )
-    print(f"Found {len(reply_toots)} reply toots")
+    log(f"Found {len(reply_toots)} reply toots")
     return reply_toots
 
 
@@ -292,7 +292,7 @@ def get_reply_toots(user_id, server, access_token, seen_urls, reply_since):
             "Authorization": f"Bearer {access_token}",
         })
     except Exception as ex:
-        print(
+        log(
             f"Error getting replies for user {user_id} on server {server}: {ex}"
         )
         return []
@@ -307,7 +307,7 @@ def get_reply_toots(user_id, server, access_token, seen_urls, reply_since):
             > reply_since
         ]
         for toot in toots:
-            print(f"Found reply toot: {toot['url']}")
+            log(f"Found reply toot: {toot['url']}")
         return toots
     elif resp.status_code == 403:
         raise Exception(
@@ -334,7 +334,7 @@ def get_all_known_context_urls(server, reply_toots,parsed_urls):
             ),
         )
     )
-    print(f"Found {len(known_context_urls)} known context toots")
+    log(f"Found {len(known_context_urls)} known context toots")
     return known_context_urls
 
 
@@ -386,7 +386,7 @@ def get_replied_toot_server_id(server, toot, replied_toot_server_ids,parsed_urls
         replied_toot_server_ids[o_url] = (url, match)
         return (url, match)
 
-    print(f"Error parsing toot URL {url}")
+    log(f"Error parsing toot URL {url}")
     replied_toot_server_ids[o_url] = None
     return None
 
@@ -399,7 +399,7 @@ def parse_user_url(url):
     if match is not None:
         return match
 
-    print(f"Error parsing Profile URL {url}")
+    log(f"Error parsing Profile URL {url}")
     
     return None
 
@@ -415,7 +415,7 @@ def parse_url(url, parsed_urls):
             parsed_urls[url] = match
 
     if url not in parsed_urls:
-        print(f"Error parsing toot URL {url}")
+        log(f"Error parsing toot URL {url}")
         parsed_urls[url] = None
     
     return parsed_urls[url]
@@ -469,17 +469,17 @@ def get_redirect_url(url):
             'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
         })
     except Exception as ex:
-        print(f"Error getting redirect URL for URL {url}. Exception: {ex}")
+        log(f"Error getting redirect URL for URL {url}. Exception: {ex}")
         return None
 
     if resp.status_code == 200:
         return url
     elif resp.status_code == 302:
         redirect_url = resp.headers["Location"]
-        print(f"Discovered redirect for URL {url}")
+        log(f"Discovered redirect for URL {url}")
         return redirect_url
     else:
-        print(
+        log(
             f"Error getting redirect URL for URL {url}. Status code: {resp.status_code}"
         )
         return None
@@ -502,24 +502,24 @@ def get_toot_context(server, toot_id, toot_url):
     try:
         resp = get(url)
     except Exception as ex:
-        print(f"Error getting context for toot {toot_url}. Exception: {ex}")
+        log(f"Error getting context for toot {toot_url}. Exception: {ex}")
         return []
 
     if resp.status_code == 200:
         try:
             res = resp.json()
-            print(f"Got context for toot {toot_url}")
+            log(f"Got context for toot {toot_url}")
             return (toot["url"] for toot in (res["ancestors"] + res["descendants"]))
         except Exception as ex:
-            print(f"Error parsing context for toot {toot_url}. Exception: {ex}")
+            log(f"Error parsing context for toot {toot_url}. Exception: {ex}")
         return []
     elif resp.status_code == 429:
         reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
-        print(f"Rate Limit hit when getting context for {toot_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
+        log(f"Rate Limit hit when getting context for {toot_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
         time.sleep((reset - datetime.now()).total_seconds() + 1)
         return get_toot_context(server, toot_id, toot_url)
 
-    print(
+    log(
         f"Error getting context for toot {toot_url}. Status code: {resp.status_code}"
     )
     return []
@@ -538,7 +538,7 @@ def add_context_urls(server, access_token, context_urls, seen_urls):
             else:
                 failed += 1
 
-    print(f"Added {count} new context toots (with {failed} failures)")
+    log(f"Added {count} new context toots (with {failed} failures)")
 
 
 def add_context_url(url, server, access_token):
@@ -550,27 +550,27 @@ def add_context_url(url, server, access_token):
             "Authorization": f"Bearer {access_token}",
         })
     except Exception as ex:
-        print(
+        log(
             f"Error adding url {search_url} to server {server}. Exception: {ex}"
         )
         return False
 
     if resp.status_code == 200:
-        print(f"Added context url {url}")
+        log(f"Added context url {url}")
         return True
     elif resp.status_code == 403:
-        print(
+        log(
             f"Error adding url {search_url} to server {server}. Status code: {resp.status_code}. "
             "Make sure you have the read:search scope enabled for your access token."
         )
         return False
     elif resp.status_code == 429:
         reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
-        print(f"Rate Limit hit when adding url {search_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
+        log(f"Rate Limit hit when adding url {search_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
         time.sleep((reset - datetime.now()).total_seconds() + 1)
         return add_context_url(url, server, access_token)
     else:
-        print(
+        log(
             f"Error adding url {search_url} to server {server}. Status code: {resp.status_code}"
         )
         return False
@@ -585,13 +585,16 @@ def get(url, headers = {}, timeout = 5, max_tries = 5):
     if response.status_code == 429:
         if max_tries > 0:
             reset = datetime.strptime(response.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
-            print(f"Rate Limit hit requesting {url}. Waiting to retry at {response.headers['x-ratelimit-reset']}")
-            time.sleep((reset - datetime.now()).total_seconds() + 1)
+            wait = (reset - datetime.now()).total_seconds() + 1
+            log(f"Rate Limit hit requesting {url}. Waiting {wait} sec to retry at {response.headers['x-ratelimit-reset']}")
+            time.sleep(wait)
             return get(url, headers, timeout, max_tries - 1)
         
         raise Exception(f"Maximum number of retries exceeded for rate limited request {url}")
     return response
 
+def log(text):
+    print(f"{datetime.now()} {datetime.now().astimezone().tzinfo}: {text}")
 
 class OrderedSet:
     """An ordered set implementation over a dict"""
@@ -640,7 +643,7 @@ Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours>
    
 
     if len(sys.argv) < 5:
-        print(HELP_MESSAGE)
+        log(HELP_MESSAGE)
         sys.exit(1)
 
     ACCESS_TOKEN = sys.argv[1]
@@ -662,7 +665,7 @@ Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours>
     else:
         MAX_FOLLOWERS = 0
 
-    print(
+    log(
         f"Getting last {REPLY_INTERVAL_IN_HOURS} hrs of replies, and latest {MAX_HOME_TIMELINE_LENGTH} posts in home timeline from {SERVER}"
     )
 
