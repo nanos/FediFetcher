@@ -18,7 +18,8 @@ def pull_context(
     max_home_timeline_length,
     max_followings,
     backfill_followings_for_user,
-    known_followings
+    known_followings,
+    max_followers
 ):
     
     parsed_urls = {}
@@ -50,6 +51,12 @@ def pull_context(
         user_id = get_user_id(server, backfill_followings_for_user)
         followings = get_new_followings(server, user_id, max_followings, known_followings)
         add_following_posts(server, access_token, followings, known_followings, seen_urls)
+    
+    if max_followers > 0 and backfill_followings_for_user != '':
+        print(f"Getting posts from {backfill_followings_for_user}'s last {max_followers} followers")
+        user_id = get_user_id(server, backfill_followings_for_user)
+        followers = get_new_followers(server, user_id, max_followers, known_followings)
+        add_following_posts(server, access_token, followers, known_followings, seen_urls)
 
 def add_following_posts(server, access_token, followings, know_followings, seen_urls):
     for user in followings:
@@ -106,6 +113,26 @@ def get_user_posts(user, know_followings, server):
     except Exception as ex:
         print(f"Error getting posts for user {user['acct']}: {ex}")
         return None
+
+def get_new_followers(server, user_id, max, known_followers):
+    """Get any new followings for the specified user, up to the max number provided"""
+    response = get(f"https://{server}/api/v1/accounts/{user_id}/followers?limit={max}")
+
+    followers = response.json()
+
+    while len(followers) < max and 'next' in response.links:
+        response = get(response.links['next']['url'])
+        followers = followers + response.json()
+
+    # Remove any we already know about    
+    new_followers = list(filter(
+        lambda user: user['acct'] not in known_followers,
+        followers
+    ))
+    
+    print(f"Got {len(followers)} followers, {len(new_followers)} of which are new")
+        
+    return new_followers
 
 def get_new_followings(server, user_id, max, known_followings):
     """Get any new followings for the specified user, up to the max number provided"""
@@ -594,7 +621,7 @@ class OrderedSet:
 
 if __name__ == "__main__":
     HELP_MESSAGE = """
-Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours> <home_timeline_length> <max_followings_count> <user>
+Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours> <home_timeline_length> <max_followings_count> <user> <max_followers_count>
 
  - <access_token>: The access token can be generated at https://<server>/settings/applications,
    and must have read:search, read:statuses and admin:read:accounts scopes.
@@ -605,7 +632,8 @@ Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours>
  - <max_followings_count>: If provided, we'll also backfill posts for new accounts followed by <user>.
    We'll backfill at most this many followings' posts.
  - <user>: Use together with <max_followings_count> to tell us which user's followings we should backfill
-
+ - <max_followers_count>: If provided, we'll also backfill posts for new accounts following <user>.
+   We'll backfill at most this many followers' posts.
 
 """
 
@@ -628,6 +656,11 @@ Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours>
         BACKFILL_FOLLOWINGS_FOR_USER = sys.argv[6]
     else:
         BACKFILL_FOLLOWINGS_FOR_USER = ''
+
+    if len(sys.argv) > 7:
+        MAX_FOLLOWERS = int(sys.argv[7])
+    else:
+        MAX_FOLLOWERS = 0
 
     print(
         f"Getting last {REPLY_INTERVAL_IN_HOURS} hrs of replies, and latest {MAX_HOME_TIMELINE_LENGTH} posts in home timeline from {SERVER}"
@@ -662,7 +695,8 @@ Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours>
         MAX_HOME_TIMELINE_LENGTH,
         MAX_FOLLOWINGS,
         BACKFILL_FOLLOWINGS_FOR_USER,
-        KNOWN_FOLLOWINGS
+        KNOWN_FOLLOWINGS,
+        MAX_FOLLOWERS
     )
 
     with open(KNOWN_FOLLOWINGS_FILE, "w", encoding="utf-8") as f:
