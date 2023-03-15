@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from datetime import datetime, timedelta
+from dateutil import parser
 import itertools
 import json
 import os
@@ -584,8 +585,9 @@ def get(url, headers = {}, timeout = 5, max_tries = 5):
     response = requests.get( url, headers= h, timeout=timeout)
     if response.status_code == 429:
         if max_tries > 0:
-            reset = datetime.strptime(response.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
-            wait = (reset - datetime.now()).total_seconds() + 1
+            reset = parser.parse(response.headers['x-ratelimit-reset'])
+            now = datetime.now(datetime.now().astimezone().tzinfo)
+            wait = (reset - now).total_seconds() + 1
             log(f"Rate Limit hit requesting {url}. Waiting {wait} sec to retry at {response.headers['x-ratelimit-reset']}")
             time.sleep(wait)
             return get(url, headers, timeout, max_tries - 1)
