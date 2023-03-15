@@ -363,15 +363,15 @@ def get_replied_toot_server_id(server, toot, replied_toot_server_ids,parsed_urls
     """get the server and ID of the toot the given toot replied to"""
     in_reply_to_id = toot["in_reply_to_id"]
     in_reply_to_account_id = toot["in_reply_to_account_id"]
-    mentions = toot["mentions"]
+    mentions = [
+        mention
+        for mention in toot["mentions"]
+        if mention["id"] == in_reply_to_account_id
+    ]
     if len(mentions) == 0:
         return None
 
-    mention = [
-        mention
-        for mention in mentions
-        if mention["id"] == in_reply_to_account_id
-    ][0]
+    mention = mentions[0]
 
     o_url = f"https://{server}/@{mention['acct']}/{in_reply_to_id}"
     if o_url in replied_toot_server_ids:
