@@ -43,7 +43,7 @@ For full context and discussion on why this is needed, read the following two bl
          - `MASTODON_SERVER` (required): The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`. 
       2. To pull in remote replies:
          - `HOME_TIMELINE_LENGTH` (optional): Look for replies to posts in the API-Key owner's home timeline, up to this many posts. (An integer number, e.g. `200`)
-         - `REPLY_INTERVAL_IN_HOURS`: (optional)  Only look at posts that have received replies in this period. (An integer number, e.g. `24`)
+         - `REPLY_INTERVAL_IN_HOURS`: (optional)  Fetch remote replies to posts that have received replies from users on your own instance in this period. (An integer number, e.g. `24`)
       3. To backfill posts from your last followings (new in v3.0.0):
          - `MAX_FOLLOWINGS` (optional): How many of your last followings you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
          - `USER` (optional): The username of the user whose followings you want to pull in (e.g. `michael` for the user `@michael@thms.uk`).
