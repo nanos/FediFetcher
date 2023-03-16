@@ -39,29 +39,29 @@ For full context and discussion on why this is needed, read the following two bl
    2. Click New Environment
    3. Provide the name `Mastodon`
    4. Add the following Environment Variables:
-      1. Required for all parts of the script:
-         - `MASTODON_SERVER`: The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`. 
-      2. Required to pull in remote replies:
-         - `HOME_TIMELINE_LENGTH`: An integer number. E.g. `200`. (See above for explanation.) Set to `0` to disable this part of the script.
-         - `REPLY_INTERVAL_IN_HOURS`: An integer number. E.g. `24`. (See above for explanation). Set to `0` to disable this part of the script.
-      3. Required to backfill posts from your last followings (new in v3.0.0):
-         - `MAX_FOLLOWINGS`: An integer number representing how many of your last followings you want to backfill. (e.g. `80`). Leave blank to disable this part of the script.
-         - `USER`: The username of the user whose followings you want to pull in (e.g. `michael` for the user `@michael@thms.uk`). Leave blank to disable this part of the script.
-      4. Required to backfill posts from your last followers (new in v3.0.1):
-         - `MAX_FOLLOWERS`:  An integer number representing how many of your last followers you want to backfill. (e.g. `80`). Leave blank to disable this part of the script.
-         - `USER` (if not already provided): The username of the user whose followings you want to pull in (e.g. `michael` for the user `@michael@thms.uk`). Leave blank to disable this part of the script.
+      1. For all parts of the script:
+         - `MASTODON_SERVER` (required): The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`. 
+      2. To pull in remote replies:
+         - `HOME_TIMELINE_LENGTH` (optional): Look for replies to posts in the API-Key owner's home timeline, up to this many posts. (An integer number, e.g. `200`)
+         - `REPLY_INTERVAL_IN_HOURS`: (optional)  Only look at posts that have received replies in this period. (An integer number, e.g. `24`)
+      3. To backfill posts from your last followings (new in v3.0.0):
+         - `MAX_FOLLOWINGS` (optional): How many of your last followings you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
+         - `USER` (optional): The username of the user whose followings you want to pull in (e.g. `michael` for the user `@michael@thms.uk`).
+      4. To backfill posts from your last followers (new in v3.0.1):
+         - `MAX_FOLLOWERS` (optional):  How many of your last followers you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
+         - `USER` (optional): The username of the user whose followers you want to pull in (e.g. `michael` for the user `@michael@thms.uk`).
 4. Finally go to the Actions tab and enable the action. The action should now automatically run approximately once every 10 min. 
 
-### 3) Runn this script locally as a cron job
+### 3) Run this script locally as a cron job
 
 If you want to, you can of course also run this script locally as a cron job:
 
-1. To get started, clone this repository. (If you'd rather not clone the full repository, you can simply download the `get_context.py` file, but don't forget to create a directory called `artifacts` in the same directory: The script expects this directory to be present, and stores information about posts it has already pushed into your instance in that directory, to avoid pushing the same posts over and over again.)
-2. Then simply run this script like so: `python3 get_context.py <ACCESS_TOKEN> <MASTODON_SERVER> <REPLY_INTERVAL_IN_HOURS> <HOME_TIMELINE_LENGTH> <MAX_FOLLOWINGS> <USER> <MAX_FOLLOWERS>` (See the section above for an explanation of these parameters. The final two parameters can be omitted, if you are not interested.)
+1. To get started, clone this repository. (If you'd rather not clone the full repository, you can simply download the `find_posts.py` file, but don't forget to create a directory called `artifacts` in the same directory: The script expects this directory to be present, and stores information about posts it has already pushed into your instance in that directory, to avoid pushing the same posts over and over again.)
+2. Then simply run this script like so: `python find_posts.py --access-token=<TOKEN> --server=<SERVER>` etc. (run `python find_posts.py -h` to get a list of all options)
 
 When setting up your cronjob, do make sure you are setting the interval long enough that two runs of the script don't overlap though! Running this script with overlapping will have unpleasant results ...
 
-If you are running this script locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be singificantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
+If you are running this script locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
 
 ## Acknowledgments
 
