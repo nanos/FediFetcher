@@ -9,6 +9,17 @@ import re
 import sys
 import requests
 import time
+import argparse
+
+parser=argparse.ArgumentParser()
+
+parser.add_argument('--server', required=True, help="The name of your server (e.g. `mstdn.thms.uk`)")
+parser.add_argument('--access-token', required=True, help="The access token can be generated at https://<server>/settings/applications, and must have read:search, read:statuses and admin:read:accounts scopes.")
+parser.add_argument('--reply-interval-in-hours', required = False, type=int, default=0, help="Only look at posts that have received replies in this period")
+parser.add_argument('--home-timeline-length', required = False, type=int, default=0, help="Also look for replies to posts in the API-Key owner's home timeline, up to this many posts")
+parser.add_argument('--user', required = False, default='', help="Use together with --max_followings_count or --max_followers_count to tell us which user's followings we should backfill")
+parser.add_argument('--max-followings', required = False, type=int, default=0, help="If provided, we'll also backfill posts for new accounts followed by --user. We'll backfill at most this many followings' posts.")
+parser.add_argument('--max-followers', required = False, type=int, default=0, help="If provided, we'll also backfill posts for new accounts following --user. We'll backfill at most this many followers' posts.")
 
 def pull_context(
     server,
@@ -625,51 +636,6 @@ class OrderedSet:
 
 
 if __name__ == "__main__":
-    HELP_MESSAGE = """
-Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours> <home_timeline_length> <max_followings_count> <user> <max_followers_count>
-
- - <access_token>: The access token can be generated at https://<server>/settings/applications,
-   and must have read:search, read:statuses and admin:read:accounts scopes.
- - <server>: The name of your server (e.g. `mstdn.thms.uk`)
- - <reply_interval_in_hours>: Only look at posts that have received replies in this period
- - <home_timeline_length>: Also look for replies to posts in the API-Key owner's home timeline, up to 
-   this many posts
- - <max_followings_count>: If provided, we'll also backfill posts for new accounts followed by <user>.
-   We'll backfill at most this many followings' posts.
- - <user>: Use together with <max_followings_count> to tell us which user's followings we should backfill
- - <max_followers_count>: If provided, we'll also backfill posts for new accounts following <user>.
-   We'll backfill at most this many followers' posts.
-
-"""
-
-   
-
-    if len(sys.argv) < 5:
-        log(HELP_MESSAGE)
-        sys.exit(1)
-
-    ACCESS_TOKEN = sys.argv[1]
-    SERVER = sys.argv[2]
-    REPLY_INTERVAL_IN_HOURS = int(sys.argv[3])
-    MAX_HOME_TIMELINE_LENGTH = int(sys.argv[4])
-    if len(sys.argv) > 5:
-        MAX_FOLLOWINGS = int(sys.argv[5])
-    else:
-        MAX_FOLLOWINGS = 0
-
-    if len(sys.argv) > 6:
-        BACKFILL_FOLLOWINGS_FOR_USER = sys.argv[6]
-    else:
-        BACKFILL_FOLLOWINGS_FOR_USER = ''
-
-    if len(sys.argv) > 7:
-        MAX_FOLLOWERS = int(sys.argv[7])
-    else:
-        MAX_FOLLOWERS = 0
-
-    log(
-        f"Getting last {REPLY_INTERVAL_IN_HOURS} hrs of replies, and latest {MAX_HOME_TIMELINE_LENGTH} posts in home timeline from {SERVER}"
-    )
 
     SEEN_URLS_FILE = "artifacts/seen_urls"
     REPLIED_TOOT_SERVER_IDS_FILE = "artifacts/replied_toot_server_ids"
@@ -691,17 +657,19 @@ Usage: python3 pull_context.py <access_token> <server> <reply_interval_in_hours>
         with open(KNOWN_FOLLOWINGS_FILE, "r", encoding="utf-8") as f:
             KNOWN_FOLLOWINGS = OrderedSet(f.read().splitlines())
 
+    arguments = parser.parse_args()
+
     pull_context(
-        SERVER,
-        ACCESS_TOKEN,
+        arguments.server,
+        arguments.access_token,
         SEEN_URLS,
         REPLIED_TOOT_SERVER_IDS,
-        REPLY_INTERVAL_IN_HOURS,
-        MAX_HOME_TIMELINE_LENGTH,
-        MAX_FOLLOWINGS,
-        BACKFILL_FOLLOWINGS_FOR_USER,
+        arguments.reply_interval_in_hours,
+        arguments.home_timeline_length,
+        arguments.max_followings,
+        arguments.user,
         KNOWN_FOLLOWINGS,
-        MAX_FOLLOWERS
+        arguments.max_followers,
     )
 
     with open(KNOWN_FOLLOWINGS_FILE, "w", encoding="utf-8") as f:
