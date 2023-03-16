@@ -1,4 +1,4 @@
-name: getAllRepliesToKnownPots
+name: getAllRepliesToKnownPosts
 concurrency: get_context
 
 on:
