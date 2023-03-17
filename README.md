@@ -74,7 +74,7 @@ Please see below for a list of configuration options.
 | `HOME_TIMELINE_LENGTH` | `--home-timeline-length` | No | Provide to fetch remote replies to posts in the API-Key owner's home timeline. Determines how many posts we'll fetch replies for. (An integer number, e.g. `200`)
 | `REPLY_INTERVAL_IN_HOURS` | `--reply-interval-in-hours` | No | Provide to fetch remote replies to posts that have received replies from users on your own instance. Determines how far back in time we'll go to find posts that have received replies. (An integer number, e.g. `24`)
 | `MAX_FOLLOWINGS` | `--max-followings` | No | Provide to backfill profiles for your most recent followings. Determines how many of your last followings you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
-| `MAX_FOLLOWERS` | `--max-followers` | No | Provide to backfill profiles for your most recent followings. Determines how many of your last followers you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
+| `MAX_FOLLOWERS` | `--max-followers` | No | Provide to backfill profiles for your most recent followers. Determines how many of your last followers you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
 | `USER` | `--user` | See Notes | Required together with `MAX_FOLLOWERS` or `MAX_FOLLOWINGS`: The username of the user whose followers or followings you want to backfill (e.g. `michael` for the user `@michael@thms.uk`).
 | `HTTP_TIMEOUT` | `--http-timeout` | No | The timeout for any HTTP requests to the Mastodon API in seconds. Defaults to `5`.
 
