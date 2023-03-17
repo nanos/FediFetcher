@@ -63,6 +63,17 @@ When setting up your cronjob, do make sure you are setting the interval long eno
 
 If you are running this script locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
 
+### 4) Run this script from a container
+
+This script is also available in a pre-packaged container, [mastodon_get_replies](https://github.com/nanos/mastodon_get_replies/pkgs/container/mastodon_get_replies).
+
+1. Pull the container from `ghcr.io`, using Docker or your container tool of choice: `docker pull ghcr.io/nanos/mastodon_get_replies:latest`
+2. Run the container, passing the command line arguments like running the script directly: `docker run -it ghcr.io/nanos/mastodon_get_replies:latest --access-token=<TOKEN> --server=<SERVER>`
+
+The same rules for running this as a cron job apply to running the container, don't overlap any executions.
+
+An example Kubernetes CronJob for running the container is included in the [`examples`](https://github.com/nanos/mastodon_get_replies/tree/main/examples) folder.
+
 ## Acknowledgments
 
 This script is mostly taken from [Abhinav Sarkar](https://notes.abhinavsarkar.net/2023/mastodon-context), with just some additions and alterations. Thank you Abhinav!
