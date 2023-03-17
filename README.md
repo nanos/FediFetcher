@@ -38,18 +38,7 @@ For full context and discussion on why this is needed, read the following two bl
    1. Go to Settings > Environments
    2. Click New Environment
    3. Provide the name `Mastodon`
-   4. Add the following Environment Variables:
-      1. For all parts of the script:
-         - `MASTODON_SERVER` (required): The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`. 
-      2. To pull in remote replies:
-         - `HOME_TIMELINE_LENGTH` (optional): Look for replies to posts in the API-Key owner's home timeline, up to this many posts. (An integer number, e.g. `200`)
-         - `REPLY_INTERVAL_IN_HOURS`: (optional)  Fetch remote replies to posts that have received replies from users on your own instance in this period. (An integer number, e.g. `24`)
-      3. To backfill posts from your last followings (new in v3.0.0):
-         - `MAX_FOLLOWINGS` (optional): How many of your last followings you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
-         - `USER` (optional): The username of the user whose followings you want to pull in (e.g. `michael` for the user `@michael@thms.uk`).
-      4. To backfill posts from your last followers (new in v3.0.1):
-         - `MAX_FOLLOWERS` (optional):  How many of your last followers you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
-         - `USER` (optional): The username of the user whose followers you want to pull in (e.g. `michael` for the user `@michael@thms.uk`).
+   4. Add environment variables to configure your action as described below.
 4. Finally go to the Actions tab and enable the action. The action should now automatically run approximately once every 10 min. 
 
 ### 3) Run this script locally as a cron job
@@ -73,6 +62,20 @@ This script is also available in a pre-packaged container, [mastodon_get_replies
 The same rules for running this as a cron job apply to running the container, don't overlap any executions.
 
 An example Kubernetes CronJob for running the container is included in the [`examples`](https://github.com/nanos/mastodon_get_replies/tree/main/examples) folder.
+
+### 5) Configuration options
+
+Please see below for a list of configuration options.
+
+| Environment Variable Name (if using GitHub Action) | Command line flag (if using cron, or the container) | Required? | Notes |
+|:---------------------------------------------------|:----------------------------------------------------|-----------|:------|
+| -- | `--access-token` | Yes | The access token. If using GitHub action, this needs to be provided as a Secret called  `ACCESS_TOKEN` |
+|`MASTODON_SERVER`|`--server`|Yes|The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`. |
+| `HOME_TIMELINE_LENGTH` | `--home-timeline-length` | No | Provide to fetch remote replies to posts in the API-Key owner's home timeline. Determines how many posts we'll fetch replies for. (An integer number, e.g. `200`)
+| `REPLY_INTERVAL_IN_HOURS` | `--reply-interval-in-hours` | No | Provide to fetch remote replies to posts that have received replies from users on your own instance. Determines how far back in time we'll go to find posts that have received replies. (An integer number, e.g. `24`)
+| `MAX_FOLLOWINGS` | `--max-followings` | No | Provide to backfill profiles for your most recent followings. Determines how many of your last followings you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
+| `MAX_FOLLOWERS` | `--max-followers` | No | Provide to backfill profiles for your most recent followings. Determines how many of your last followers you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
+| `USER` | `--user` | See Notes | Required together with `MAX_FOLLOWERS` or `MAX_FOLLOWINGS`: The username of the user whose followers or followings you want to backfill (e.g. `michael` for the user `@michael@thms.uk`).
 
 ## Acknowledgments
 
