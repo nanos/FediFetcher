@@ -20,6 +20,7 @@ parser.add_argument('--home-timeline-length', required = False, type=int, defaul
 parser.add_argument('--user', required = False, default='', help="Use together with --max-followings or --max-followers to tell us which user's followings/followers we should backfill")
 parser.add_argument('--max-followings', required = False, type=int, default=0, help="Backfill posts for new accounts followed by --user. We'll backfill at most this many followings' posts")
 parser.add_argument('--max-followers', required = False, type=int, default=0, help="Backfill posts for new accounts following --user. We'll backfill at most this many followers' posts")
+parser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
 
 def pull_context(
     server,
@@ -587,11 +588,14 @@ def add_context_url(url, server, access_token):
         )
         return False
     
-def get(url, headers = {}, timeout = 5, max_tries = 5):
+def get(url, headers = {}, timeout = 0, max_tries = 5):
     """A simple wrapper to make a get request while providing our user agent, and respecting rate limits"""
     h = headers.copy()
     if 'User-Agent' not in h:
         h['User-Agent'] = 'mastodon_get_replies (https://go.thms.uk/mgr)'
+
+    if timeout == 0:
+        timeout = arguments.http_timeout
         
     response = requests.get( url, headers= h, timeout=timeout)
     if response.status_code == 429:
