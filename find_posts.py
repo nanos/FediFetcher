@@ -11,16 +11,16 @@ import requests
 import time
 import argparse
 
-parser=argparse.ArgumentParser()
+argparser=argparse.ArgumentParser()
 
-parser.add_argument('--server', required=True, help="Required: The name of your server (e.g. `mstdn.thms.uk`)")
-parser.add_argument('--access-token', required=True, help="Required: The access token can be generated at https://<server>/settings/applications, and must have read:search, read:statuses and admin:read:accounts scopes")
-parser.add_argument('--reply-interval-in-hours', required = False, type=int, default=0, help="Fetch remote replies to posts that have received replies from users on your own instance in this period")
-parser.add_argument('--home-timeline-length', required = False, type=int, default=0, help="Look for replies to posts in the API-Key owner's home timeline, up to this many posts")
-parser.add_argument('--user', required = False, default='', help="Use together with --max-followings or --max-followers to tell us which user's followings/followers we should backfill")
-parser.add_argument('--max-followings', required = False, type=int, default=0, help="Backfill posts for new accounts followed by --user. We'll backfill at most this many followings' posts")
-parser.add_argument('--max-followers', required = False, type=int, default=0, help="Backfill posts for new accounts following --user. We'll backfill at most this many followers' posts")
-parser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
+argparser.add_argument('--server', required=True, help="Required: The name of your server (e.g. `mstdn.thms.uk`)")
+argparser.add_argument('--access-token', required=True, help="Required: The access token can be generated at https://<server>/settings/applications, and must have read:search, read:statuses and admin:read:accounts scopes")
+argparser.add_argument('--reply-interval-in-hours', required = False, type=int, default=0, help="Fetch remote replies to posts that have received replies from users on your own instance in this period")
+argparser.add_argument('--home-timeline-length', required = False, type=int, default=0, help="Look for replies to posts in the API-Key owner's home timeline, up to this many posts")
+argparser.add_argument('--user', required = False, default='', help="Use together with --max-followings or --max-followers to tell us which user's followings/followers we should backfill")
+argparser.add_argument('--max-followings', required = False, type=int, default=0, help="Backfill posts for new accounts followed by --user. We'll backfill at most this many followings' posts")
+argparser.add_argument('--max-followers', required = False, type=int, default=0, help="Backfill posts for new accounts following --user. We'll backfill at most this many followers' posts")
+argparser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
 
 def pull_context(
     server,
@@ -661,7 +661,7 @@ if __name__ == "__main__":
         with open(KNOWN_FOLLOWINGS_FILE, "r", encoding="utf-8") as f:
             KNOWN_FOLLOWINGS = OrderedSet(f.read().splitlines())
 
-    arguments = parser.parse_args()
+    arguments = argparser.parse_args()
 
     pull_context(
         arguments.server,
