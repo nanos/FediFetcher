@@ -72,6 +72,8 @@ This script is also available in a pre-packaged container, [mastodon_get_replies
 
 The same rules for running this as a cron job apply to running the container, don't overlap any executions.
 
+Persistent files are stored in `/app/artifacts` within the container, so you may want to map this to a local folder on your system.
+
 An example Kubernetes CronJob for running the container is included in the [`examples`](https://github.com/nanos/mastodon_get_replies/tree/main/examples) folder.
 
 ## Acknowledgments
