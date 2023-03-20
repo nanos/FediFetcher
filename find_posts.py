@@ -74,7 +74,7 @@ def pull_context(
         add_following_posts(server, access_token, followers, known_followings, seen_urls)
 
     if max_follow_requests > 0:
-        log(f"Getting posts from {backfill_followings_for_user}'s last {max_follow_requests} follow requests")
+        log(f"Getting posts from last {max_follow_requests} follow requests")
         user_id = get_user_id(server, backfill_followings_for_user)
         follow_requests = get_new_follow_requests(server, access_token, max_follow_requests, known_followings)
         add_following_posts(server, access_token, follow_requests, known_followings, seen_urls)
