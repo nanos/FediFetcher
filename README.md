@@ -5,10 +5,12 @@ This GitHub repository provides a GitHub action that runs every 10 mins, doing t
 1. It can [pull remote replies into your instance](https://blog.thms.uk/2023/03/pull-missing-responses-into-mastodon?utm_source=github), using the Mastodon API. That part itself has two parts:
    1. It gets remote replies to posts that users on your instance have already replied to during the last `REPLY_INTERVAL_IN_HOURS` hours, and adds them to your own server.
    2. It gets remote replies to the last `HOME_TIMELINE_LENGTH` posts from your home timeline, and adds them to your own server.
-2. It can also [backfill posts](https://blog.thms.uk/2023/03/backfill-recently-followed-accounts?utm_source=github) from the last `MAX_FOLLOWINGS` users that you have followed.
-3. In the same way, it can also backfill posts form the last `MAX_FOLLOWERS` users that have followed you.
+2. It can also [backfill posts](https://blog.thms.uk/2023/03/backfill-recently-followed-accounts?utm_source=github):
+   1. from the last `MAX_FOLLOWINGS` users that you have followed.
+   2. form the last `MAX_FOLLOWERS` users that have followed you.
+   3. form the last `MAX_FOLLOW_REQUESTS` users that have sent you a follow request.
 
-Each part can be disabled completely, and all of the values are configurable.
+Each part can be disabled completely, and all of the parameters are configurable.
 
 **Be aware, that this script may run for a long time, if these values are too high.** Experiment a bit with what works for you, by starting with fairly small numbers (maybe `HOME_TIMELINE_LENGTH = 200`, `REPLY_INTERVAL_IN_HOURS = 12`) and increase the numbers as you see fit.
 
@@ -19,15 +21,20 @@ For full context and discussion on why this is needed, read the following two bl
 
 ## Setup
 
+You can run this script either as a GitHub Action, as a scheduled cron job on your local machine, or from a pre-packed container.
 ### 1) Get the required access token:
+
+Regardless of how you want to run this script, you must first get an access token:
 
 1. In Mastodon go to Preferences > Development > New Application
    1. give it a nice name
-   2. enable `read:search`, `read:statuses` and `admin:read:accounts `
+   2. enable `read:search`, `read:statuses`, `read:follows`, and `admin:read:accounts`
    3. Save
    4. Copy the value of `Your access token`
 
-### 2) Configure and run the GitHub action
+### 2.1) Configure and run the GitHub Action
+
+To run this script as a GitHub Action:
 
 1. Fork this repository
 2. Add your access token:
@@ -41,7 +48,7 @@ For full context and discussion on why this is needed, read the following two bl
    4. Add environment variables to configure your action as described below.
 4. Finally go to the Actions tab and enable the action. The action should now automatically run approximately once every 10 min. 
 
-### 3) Run this script locally as a cron job
+### 2.2) Run this script locally as a cron job
 
 If you want to, you can of course also run this script locally as a cron job:
 
@@ -52,7 +59,7 @@ When setting up your cronjob, do make sure you are setting the interval long eno
 
 If you are running this script locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
 
-### 4) Run this script from a container
+### 2.3) Run this script from a container
 
 This script is also available in a pre-packaged container, [mastodon_get_replies](https://github.com/nanos/mastodon_get_replies/pkgs/container/mastodon_get_replies).
 
@@ -63,7 +70,7 @@ The same rules for running this as a cron job apply to running the container, do
 
 An example Kubernetes CronJob for running the container is included in the [`examples`](https://github.com/nanos/mastodon_get_replies/tree/main/examples) folder.
 
-### 5) Configuration options
+### Configuration options
 
 Please see below for a list of configuration options.
 
@@ -72,11 +79,22 @@ Please see below for a list of configuration options.
 | -- | `--access-token` | Yes | The access token. If using GitHub action, this needs to be provided as a Secret called  `ACCESS_TOKEN` |
 |`MASTODON_SERVER`|`--server`|Yes|The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`. |
 | `HOME_TIMELINE_LENGTH` | `--home-timeline-length` | No | Provide to fetch remote replies to posts in the API-Key owner's home timeline. Determines how many posts we'll fetch replies for. (An integer number, e.g. `200`)
-| `REPLY_INTERVAL_IN_HOURS` | `--reply-interval-in-hours` | No | Provide to fetch remote replies to posts that have received replies from users on your own instance. Determines how far back in time we'll go to find posts that have received replies. (An integer number, e.g. `24`)
+| `REPLY_INTERVAL_IN_HOURS` | `--reply-interval-in-hours` | No | Provide to fetch remote replies to posts that have received replies from users on your own instance. Determines how far back in time we'll go to find posts that have received replies. (An integer number, e.g. `24`.) Requires an access token with `admin:read:accounts`
+| `USER` | `--user` | See Notes | Required together with `MAX_FOLLOWERS` or `MAX_FOLLOWINGS`: The username of the user whose followers or followings you want to backfill (e.g. `michael` for the user `@michael@thms.uk`).
 | `MAX_FOLLOWINGS` | `--max-followings` | No | Provide to backfill profiles for your most recent followings. Determines how many of your last followings you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
 | `MAX_FOLLOWERS` | `--max-followers` | No | Provide to backfill profiles for your most recent followers. Determines how many of your last followers you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
-| `USER` | `--user` | See Notes | Required together with `MAX_FOLLOWERS` or `MAX_FOLLOWINGS`: The username of the user whose followers or followings you want to backfill (e.g. `michael` for the user `@michael@thms.uk`).
+| `MAX_FOLLOW_REQUESTS` | `--max-follow-requests` | No | Provide to backfill profiles for the API key owner's most recent pending follow requests. Determines how many of your last follow requests you want to backfill. (An integer number, e.g. `80`.). Requires an access token with `read:follows` scope.
 | `HTTP_TIMEOUT` | `--http-timeout` | No | The timeout for any HTTP requests to the Mastodon API in seconds. Defaults to `5`.
+
+#### Required Access Token Scopes
+
+ - For all actions, your access token must include these scopes:
+   - `read:search`
+   - `read:statuses` 
+ - If you are supplying `REPLY_INTERVAL_IN_HOURS` / `--reply-interval-in-hours` you must additionally enable this scope:
+   - `admin:read:accounts`
+ - If you are supplying `MAX_FOLLOW_REQUESTS` / `--max-follow-requests` you must additionally enable this scope:
+   - `read:follows`
 
 ## Acknowledgments
 

@@ -20,6 +20,7 @@ argparser.add_argument('--home-timeline-length', required = False, type=int, def
 argparser.add_argument('--user', required = False, default='', help="Use together with --max-followings or --max-followers to tell us which user's followings/followers we should backfill")
 argparser.add_argument('--max-followings', required = False, type=int, default=0, help="Backfill posts for new accounts followed by --user. We'll backfill at most this many followings' posts")
 argparser.add_argument('--max-followers', required = False, type=int, default=0, help="Backfill posts for new accounts following --user. We'll backfill at most this many followers' posts")
+argparser.add_argument('--max-follow-requests', required = False, type=int, default=5, help="Backfill posts of the API key owners pending follow requests. We'll backfill at most this many requester's posts")
 argparser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
 
 def pull_context(
@@ -32,7 +33,8 @@ def pull_context(
     max_followings,
     backfill_followings_for_user,
     known_followings,
-    max_followers
+    max_followers,
+    max_follow_requests
 ):
     
     parsed_urls = {}
@@ -70,6 +72,12 @@ def pull_context(
         user_id = get_user_id(server, backfill_followings_for_user)
         followers = get_new_followers(server, user_id, max_followers, known_followings)
         add_following_posts(server, access_token, followers, known_followings, seen_urls)
+
+    if max_follow_requests > 0:
+        log(f"Getting posts from {backfill_followings_for_user}'s last {max_follow_requests} follow requests")
+        user_id = get_user_id(server, backfill_followings_for_user)
+        follow_requests = get_new_follow_requests(server, access_token, max_follow_requests, known_followings)
+        add_following_posts(server, access_token, follow_requests, known_followings, seen_urls)
 
 def add_following_posts(server, access_token, followings, know_followings, seen_urls):
     for user in followings:
@@ -126,16 +134,27 @@ def get_user_posts(user, know_followings, server):
     except Exception as ex:
         log(f"Error getting posts for user {user['acct']}: {ex}")
         return None
+    
+def get_new_follow_requests(server, access_token, max, known_followings):
+    """Get any new follow requests for the specified user, up to the max number provided"""
+
+    follow_requests = get_paginated_mastodon(f"https://{server}/api/v1/follow_requests", max, {
+        "Authorization": f"Bearer {access_token}",
+    })
+
+    # Remove any we already know about    
+    new_follow_requests = list(filter(
+        lambda user: user['acct'] not in known_followings,
+        follow_requests
+    ))
+    
+    log(f"Got {len(follow_requests)} follow_requests, {len(new_follow_requests)} of which are new")
+        
+    return new_follow_requests
 
 def get_new_followers(server, user_id, max, known_followers):
     """Get any new followings for the specified user, up to the max number provided"""
-    response = get(f"https://{server}/api/v1/accounts/{user_id}/followers?limit={max}")
-
-    followers = response.json()
-
-    while len(followers) < max and 'next' in response.links:
-        response = get(response.links['next']['url'])
-        followers = followers + response.json()
+    followers = get_paginated_mastodon(f"https://{server}/api/v1/accounts/{user_id}/followers", max)
 
     # Remove any we already know about    
     new_followers = list(filter(
@@ -149,13 +168,7 @@ def get_new_followers(server, user_id, max, known_followers):
 
 def get_new_followings(server, user_id, max, known_followings):
     """Get any new followings for the specified user, up to the max number provided"""
-
-    response = get(f"https://{server}/api/v1/accounts/{user_id}/following?limit={max}")
-    following = response.json()
-
-    while len(following) < max and 'next' in response.links:
-        response = get(response.links['next']['url'])
-        following = following + response.json()
+    following = get_paginated_mastodon(f"https://{server}/api/v1/accounts/{user_id}/following", max)
 
     # Remove any we already know about    
     new_followings = list(filter(
@@ -588,6 +601,35 @@ def add_context_url(url, server, access_token):
         )
         return False
     
+def get_paginated_mastodon(url, max, headers = {}, timeout = 0, max_tries = 5):
+    """Make a paginated request to mastodon"""
+    response = get(f"{url}?limit={max}", headers, timeout, max_tries)
+
+    if response.status_code != 200:
+        if response.status_code == 401:
+            raise Exception(
+                f"Error getting URL {url}. Status code: {response.status_code}. "
+                "Ensure your access token is correct"
+            )
+        elif response.status_code == 403:
+            raise Exception(
+                f"Error getting URL {url}. Status code: {response.status_code}. "
+                "Make sure you have the correct scopes enabled for your access token."
+            )
+        else:
+            raise Exception(
+                f"Error getting URL {url}. Status code: {response.status_code}"
+            )
+
+    result = response.json()
+
+    while len(result) < max and 'next' in response.links:
+        response = get(response.links['next']['url'], headers, timeout, max_tries)
+        result = result + response.json()
+    
+    return result
+
+
 def get(url, headers = {}, timeout = 0, max_tries = 5):
     """A simple wrapper to make a get request while providing our user agent, and respecting rate limits"""
     h = headers.copy()
@@ -674,6 +716,7 @@ if __name__ == "__main__":
         arguments.user,
         KNOWN_FOLLOWINGS,
         arguments.max_followers,
+        arguments.max_follow_requests
     )
 
     with open(KNOWN_FOLLOWINGS_FILE, "w", encoding="utf-8") as f:
