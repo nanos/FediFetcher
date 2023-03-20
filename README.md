@@ -48,6 +48,8 @@ To run this script as a GitHub Action:
    4. Add environment variables to configure your action as described below.
 4. Finally go to the Actions tab and enable the action. The action should now automatically run approximately once every 10 min. 
 
+Keep in mind that [the schedule event can be delayed during periods of high loads of GitHub Actions workflow runs](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule), and that [scheduled workflows are automatically disabled when no repository activity has occurred in 60 days](https://docs.github.com/en/actions/managing-workflow-runs/disabling-and-enabling-a-workflow).
+
 ### 2.2) Run this script locally as a cron job
 
 If you want to, you can of course also run this script locally as a cron job:
@@ -61,7 +63,7 @@ If you are running this script locally, my recommendation is to run it manually 
 
 ### 2.3) Run this script from a container
 
-This script is also available in a pre-packaged container, [mastodon_get_replies](https://github.com/nanos/mastodon_get_replies/pkgs/container/mastodon_get_replies).
+This script is also available in a pre-packaged container, [mastodon_get_replies](https://github.com/nanos/mastodon_get_replies/pkgs/container/mastodon_get_replies) - Thank you [@nikdoof](https://github.com/nikdoof).
 
 1. Pull the container from `ghcr.io`, using Docker or your container tool of choice: `docker pull ghcr.io/nanos/mastodon_get_replies:latest`
 2. Run the container, passing the command line arguments like running the script directly: `docker run -it ghcr.io/nanos/mastodon_get_replies:latest --access-token=<TOKEN> --server=<SERVER>`
