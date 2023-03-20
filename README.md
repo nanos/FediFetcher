@@ -48,7 +48,7 @@ To run this script as a GitHub Action:
    4. Add environment variables to configure your action as described below.
 4. Finally go to the Actions tab and enable the action. The action should now automatically run approximately once every 10 min. 
 
-Keep in mind that [the schedule event can be delayed during periods of high loads of GitHub Actions workflow runs](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule), and that [scheduled workflows are automatically disabled when no repository activity has occurred in 60 days](https://docs.github.com/en/actions/managing-workflow-runs/disabling-and-enabling-a-workflow).
+Keep in mind that [the schedule event can be delayed during periods of high loads of GitHub Actions workflow runs](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule), and that [scheduled workflows are automatically disabled when no repository activity has occurred in 60 days](https://github.com/nanos/mastodon_get_replies/issues/17).
 
 ### 2.2) Run this script locally as a cron job
 
