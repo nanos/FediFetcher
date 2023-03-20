@@ -683,47 +683,64 @@ class OrderedSet:
 
 if __name__ == "__main__":
 
-    SEEN_URLS_FILE = "artifacts/seen_urls"
-    REPLIED_TOOT_SERVER_IDS_FILE = "artifacts/replied_toot_server_ids"
-    KNOWN_FOLLOWINGS_FILE = "artifacts/known_followings"
+    LOCK_FILE = 'artifacts/lock.lock'
+
+    if( os.path.exists(LOCK_FILE)):
+        log(f"Lock file exists at {LOCK_FILE}")
+        sys.exit(1)
+
+    with open(LOCK_FILE, "w", encoding="utf-8") as f:
+        f.write(f"{datetime.now()}")
+
+    try:
+
+        SEEN_URLS_FILE = "artifacts/seen_urls"
+        REPLIED_TOOT_SERVER_IDS_FILE = "artifacts/replied_toot_server_ids"
+        KNOWN_FOLLOWINGS_FILE = "artifacts/known_followings"
 
 
-    SEEN_URLS = OrderedSet([])
-    if os.path.exists(SEEN_URLS_FILE):
-        with open(SEEN_URLS_FILE, "r", encoding="utf-8") as f:
-            SEEN_URLS = OrderedSet(f.read().splitlines())
+        SEEN_URLS = OrderedSet([])
+        if os.path.exists(SEEN_URLS_FILE):
+            with open(SEEN_URLS_FILE, "r", encoding="utf-8") as f:
+                SEEN_URLS = OrderedSet(f.read().splitlines())
 
-    REPLIED_TOOT_SERVER_IDS = {}
-    if os.path.exists(REPLIED_TOOT_SERVER_IDS_FILE):
-        with open(REPLIED_TOOT_SERVER_IDS_FILE, "r", encoding="utf-8") as f:
-            REPLIED_TOOT_SERVER_IDS = json.load(f)
+        REPLIED_TOOT_SERVER_IDS = {}
+        if os.path.exists(REPLIED_TOOT_SERVER_IDS_FILE):
+            with open(REPLIED_TOOT_SERVER_IDS_FILE, "r", encoding="utf-8") as f:
+                REPLIED_TOOT_SERVER_IDS = json.load(f)
 
-    KNOWN_FOLLOWINGS = OrderedSet([])
-    if os.path.exists(KNOWN_FOLLOWINGS_FILE):
-        with open(KNOWN_FOLLOWINGS_FILE, "r", encoding="utf-8") as f:
-            KNOWN_FOLLOWINGS = OrderedSet(f.read().splitlines())
+        KNOWN_FOLLOWINGS = OrderedSet([])
+        if os.path.exists(KNOWN_FOLLOWINGS_FILE):
+            with open(KNOWN_FOLLOWINGS_FILE, "r", encoding="utf-8") as f:
+                KNOWN_FOLLOWINGS = OrderedSet(f.read().splitlines())
 
-    arguments = argparser.parse_args()
+        arguments = argparser.parse_args()
 
-    pull_context(
-        arguments.server,
-        arguments.access_token,
-        SEEN_URLS,
-        REPLIED_TOOT_SERVER_IDS,
-        arguments.reply_interval_in_hours,
-        arguments.home_timeline_length,
-        arguments.max_followings,
-        arguments.user,
-        KNOWN_FOLLOWINGS,
-        arguments.max_followers,
-        arguments.max_follow_requests
-    )
+        pull_context(
+            arguments.server,
+            arguments.access_token,
+            SEEN_URLS,
+            REPLIED_TOOT_SERVER_IDS,
+            arguments.reply_interval_in_hours,
+            arguments.home_timeline_length,
+            arguments.max_followings,
+            arguments.user,
+            KNOWN_FOLLOWINGS,
+            arguments.max_followers,
+            arguments.max_follow_requests
+        )
 
-    with open(KNOWN_FOLLOWINGS_FILE, "w", encoding="utf-8") as f:
-        f.write("\n".join(list(KNOWN_FOLLOWINGS)[-10000:]))
+        with open(KNOWN_FOLLOWINGS_FILE, "w", encoding="utf-8") as f:
+            f.write("\n".join(list(KNOWN_FOLLOWINGS)[-10000:]))
 
-    with open(SEEN_URLS_FILE, "w", encoding="utf-8") as f:
-        f.write("\n".join(list(SEEN_URLS)[-10000:]))
+        with open(SEEN_URLS_FILE, "w", encoding="utf-8") as f:
+            f.write("\n".join(list(SEEN_URLS)[-10000:]))
 
-    with open(REPLIED_TOOT_SERVER_IDS_FILE, "w", encoding="utf-8") as f:
-        json.dump(dict(list(REPLIED_TOOT_SERVER_IDS.items())[-10000:]), f)
+        with open(REPLIED_TOOT_SERVER_IDS_FILE, "w", encoding="utf-8") as f:
+            json.dump(dict(list(REPLIED_TOOT_SERVER_IDS.items())[-10000:]), f)
+
+        os.remove(LOCK_FILE)
+
+    except Exception as ex:
+        os.remove(LOCK_FILE)
+        raise
