@@ -236,7 +236,7 @@ def get_timeline(server, access_token, max):
             toots = toots + response.json()
     except Exception as ex:
         log(f"Error getting timeline toots: {ex}")
-        sys.exit(1)
+        raise
 
     log(f"Found {len(toots)} toots in timeline")
 
