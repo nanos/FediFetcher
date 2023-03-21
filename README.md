@@ -87,7 +87,7 @@ Please see below for a list of configuration options.
 | `MAX_FOLLOWERS` | `--max-followers` | No | Provide to backfill profiles for your most recent followers. Determines how many of your last followers you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
 | `MAX_FOLLOW_REQUESTS` | `--max-follow-requests` | No | Provide to backfill profiles for the API key owner's most recent pending follow requests. Determines how many of your last follow requests you want to backfill. (An integer number, e.g. `80`.). Requires an access token with `read:follows` scope.
 | `HTTP_TIMEOUT` | `--http-timeout` | No | The timeout for any HTTP requests to the Mastodon API in seconds. Defaults to `5`.
-| -- | `--lock-hours` | No | Determines after how many hours a lock file should be discarded. Not required when running the script as GitHub Action, as concurrency is prevented using a different mechanism.
+| -- | `--lock-hours` | No | Determines after how many hours a lock file should be discarded. Not relevant when running the script as GitHub Action, as concurrency is prevented using a different mechanism.
 
 #### Required Access Token Scopes
 
