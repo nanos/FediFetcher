@@ -682,6 +682,9 @@ class OrderedSet:
 
 
 if __name__ == "__main__":
+    start = datetime.now()
+
+    log(f"Beginning script")
 
     LOCK_FILE = 'artifacts/lock.lock'
 
@@ -741,6 +744,9 @@ if __name__ == "__main__":
 
         os.remove(LOCK_FILE)
 
+        log(f"Processing finished in {datetime.now() - start}.")
+
     except Exception as ex:
         os.remove(LOCK_FILE)
+        log(f"Job failed after {datetime.now() - start}.")
         raise
