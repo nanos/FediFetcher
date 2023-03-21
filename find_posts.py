@@ -23,6 +23,7 @@ argparser.add_argument('--max-followers', required = False, type=int, default=0,
 argparser.add_argument('--max-follow-requests', required = False, type=int, default=0, help="Backfill posts of the API key owners pending follow requests. We'll backfill at most this many requester's posts")
 argparser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
 argparser.add_argument('--lock-hours', required = False, type=int, default=24, help="The lock timeout in hours.")
+argparser.add_argument('--finished-callback', required = False, default=None, help="Provide a callback url that will be pinged when processing is complete. You can use this for 'dead man switch' monitoring of your task")
 
 def pull_context(
     server,
@@ -758,6 +759,12 @@ if __name__ == "__main__":
             json.dump(dict(list(REPLIED_TOOT_SERVER_IDS.items())[-10000:]), f)
 
         os.remove(LOCK_FILE)
+
+        if(arguments.finished_callback != None):
+            try:
+                get(arguments.finished_callback)
+            except Exception as ex:
+                log(f"Error getting callback url: {ex}")
 
         log(f"Processing finished in {datetime.now() - start}.")
 

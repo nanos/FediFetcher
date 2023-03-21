@@ -32,7 +32,7 @@ jobs:
           path: artifacts
       - name: Get Directory structure
         run: ls -lR
-      - run: python find_posts.py --lock-hours=0 --access-token=${{ secrets.ACCESS_TOKEN }} --server=${{ vars.MASTODON_SERVER }} --reply-interval-in-hours=${{ vars.REPLY_INTERVAL_IN_HOURS || 0 }} --home-timeline-length=${{ vars.HOME_TIMELINE_LENGTH || 0 }} --max-followings=${{ vars.MAX_FOLLOWINGS || 0 }} --user=${{ vars.USER }} --max-followers=${{ vars.MAX_FOLLOWERS || 0 }}  --http-timeout=${{ vars.HTTP_TIMEOUT || 5 }} --max-follow-requests=${{ vars.MAX_FOLLOW_REQUESTS || 0 }}
+      - run: python find_posts.py --lock-hours=0 --access-token=${{ secrets.ACCESS_TOKEN }} --server=${{ vars.MASTODON_SERVER }} --reply-interval-in-hours=${{ vars.REPLY_INTERVAL_IN_HOURS || 0 }} --home-timeline-length=${{ vars.HOME_TIMELINE_LENGTH || 0 }} --max-followings=${{ vars.MAX_FOLLOWINGS || 0 }} --user=${{ vars.USER }} --max-followers=${{ vars.MAX_FOLLOWERS || 0 }}  --http-timeout=${{ vars.HTTP_TIMEOUT || 5 }} --max-follow-requests=${{ vars.MAX_FOLLOW_REQUESTS || 0 }} --finished-callback=${{ vars.FINISHED_CALLBACK }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
