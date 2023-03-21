@@ -694,9 +694,6 @@ if __name__ == "__main__":
     if( os.path.exists(LOCK_FILE)):
         log(f"Lock file exists at {LOCK_FILE}")
 
-        if(arguments.lock_hours <= 0):
-            sys.exit(1)
-
         try:
             with open(LOCK_FILE, "r", encoding="utf-8") as f:
                 lock_time = parser.parse(f.read())
