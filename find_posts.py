@@ -20,7 +20,7 @@ argparser.add_argument('--home-timeline-length', required = False, type=int, def
 argparser.add_argument('--user', required = False, default='', help="Use together with --max-followings or --max-followers to tell us which user's followings/followers we should backfill")
 argparser.add_argument('--max-followings', required = False, type=int, default=0, help="Backfill posts for new accounts followed by --user. We'll backfill at most this many followings' posts")
 argparser.add_argument('--max-followers', required = False, type=int, default=0, help="Backfill posts for new accounts following --user. We'll backfill at most this many followers' posts")
-argparser.add_argument('--max-follow-requests', required = False, type=int, default=5, help="Backfill posts of the API key owners pending follow requests. We'll backfill at most this many requester's posts")
+argparser.add_argument('--max-follow-requests', required = False, type=int, default=0, help="Backfill posts of the API key owners pending follow requests. We'll backfill at most this many requester's posts")
 argparser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
 argparser.add_argument('--lock-hours', required = False, type=int, default=0, help="The lock timeout in hours.")
 
