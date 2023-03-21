@@ -5,6 +5,7 @@ This GitHub repository provides a GitHub action that runs every 10 mins, doing t
 1. It can [pull remote replies into your instance](https://blog.thms.uk/2023/03/pull-missing-responses-into-mastodon?utm_source=github), using the Mastodon API. That part itself has two parts:
    1. It gets remote replies to posts that users on your instance have already replied to during the last `REPLY_INTERVAL_IN_HOURS` hours, and adds them to your own server.
    2. It gets remote replies to the last `HOME_TIMELINE_LENGTH` posts from your home timeline, and adds them to your own server.
+   3. It gets remote replies to the last `MAX_BOOKMARKS` of your bookmarks, and adds them to your own server.
 2. It can also [backfill posts](https://blog.thms.uk/2023/03/backfill-recently-followed-accounts?utm_source=github):
    1. from the last `MAX_FOLLOWINGS` users that you have followed.
    2. form the last `MAX_FOLLOWERS` users that have followed you.
@@ -28,7 +29,7 @@ Regardless of how you want to run this script, you must first get an access toke
 
 1. In Mastodon go to Preferences > Development > New Application
    1. give it a nice name
-   2. enable `read:search`, `read:statuses`, `read:follows`, and `admin:read:accounts`
+   2. Enable the required scopes for your options. See below for details, but if you want to use all parts of this script, you'll need these scopes: `read:search`, `read:statuses`, `read:follows`, `read:bookmarks`, and `admin:read:accounts`
    3. Save
    4. Copy the value of `Your access token`
 
@@ -87,6 +88,7 @@ Please see below for a list of configuration options.
 | `MAX_FOLLOWINGS` | `--max-followings` | No | Provide to backfill profiles for your most recent followings. Determines how many of your last followings you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
 | `MAX_FOLLOWERS` | `--max-followers` | No | Provide to backfill profiles for your most recent followers. Determines how many of your last followers you want to backfill. (An integer number, e.g. `80`. Ensure you also provide `USER`).
 | `MAX_FOLLOW_REQUESTS` | `--max-follow-requests` | No | Provide to backfill profiles for the API key owner's most recent pending follow requests. Determines how many of your last follow requests you want to backfill. (An integer number, e.g. `80`.). Requires an access token with `read:follows` scope.
+| `MAX_BOOKMARKS` | `--max-bookmarks` | No | Provide to fetch remote replies to any posts you have bookmarked. Determines how many of your bookmarks you want to get replies to. (An integer number, e.g. `80`.). Requires an access token with `read:bookmarks` scope.
 | `HTTP_TIMEOUT` | `--http-timeout` | No | The timeout for any HTTP requests to the Mastodon API in seconds. Defaults to `5`.
 | -- | `--lock-hours` | No | Determines after how many hours a lock file should be discarded. Not relevant when running the script as GitHub Action, as concurrency is prevented using a different mechanism.
 | `ON_START` | `--on-start` | No | Optionally provide a callback URL that will be pinged when processing is starting. A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
@@ -102,6 +104,8 @@ Please see below for a list of configuration options.
    - `admin:read:accounts`
  - If you are supplying `MAX_FOLLOW_REQUESTS` / `--max-follow-requests` you must additionally enable this scope:
    - `read:follows`
+ - If you are supplying `MAX_BOOKMARKS` / `--max-bookmarks` you must additionally enable this scope:
+   - `read:bookmarks`
 
 ## Acknowledgments
 

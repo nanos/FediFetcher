@@ -22,6 +22,7 @@ argparser.add_argument('--user', required = False, default='', help="Use togethe
 argparser.add_argument('--max-followings', required = False, type=int, default=0, help="Backfill posts for new accounts followed by --user. We'll backfill at most this many followings' posts")
 argparser.add_argument('--max-followers', required = False, type=int, default=0, help="Backfill posts for new accounts following --user. We'll backfill at most this many followers' posts")
 argparser.add_argument('--max-follow-requests', required = False, type=int, default=0, help="Backfill posts of the API key owners pending follow requests. We'll backfill at most this many requester's posts")
+argparser.add_argument('--max-bookmarks', required = False, type=int, default=0, help="Fetch remote replies to the API key owners Bookmarks. We'll fetch replies to at most this many bookmarks")
 argparser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
 argparser.add_argument('--lock-hours', required = False, type=int, default=24, help="The lock timeout in hours.")
 argparser.add_argument('--on-done', required = False, default=None, help="Provide a url that will be pinged when processing has completed. You can use this for 'dead man switch' monitoring of your task")
@@ -39,7 +40,8 @@ def pull_context(
     backfill_followings_for_user,
     known_followings,
     max_followers,
-    max_follow_requests
+    max_follow_requests,
+    max_bookmarks
 ):
     
     parsed_urls = {}
@@ -80,9 +82,19 @@ def pull_context(
 
     if max_follow_requests > 0:
         log(f"Getting posts from last {max_follow_requests} follow requests")
-        user_id = get_user_id(server, backfill_followings_for_user)
         follow_requests = get_new_follow_requests(server, access_token, max_follow_requests, known_followings)
         add_following_posts(server, access_token, follow_requests, known_followings, seen_urls)
+
+    if max_bookmarks > 0:
+        log(f"Pulling replies to the last {max_bookmarks} bookmarks")
+        bookmarks = get_bookmarks(server, access_token, max_bookmarks)
+        known_context_urls = get_all_known_context_urls(server, bookmarks,parsed_urls)
+        add_context_urls(server, access_token, known_context_urls, seen_urls)
+
+def get_bookmarks(server, access_token, max):
+    return get_paginated_mastodon(f"https://{server}/api/v1/bookmarks", max, {
+        "Authorization": f"Bearer {access_token}",
+    })
 
 def add_following_posts(server, access_token, followings, know_followings, seen_urls):
     for user in followings:
@@ -767,7 +779,8 @@ if __name__ == "__main__":
             arguments.user,
             KNOWN_FOLLOWINGS,
             arguments.max_followers,
-            arguments.max_follow_requests
+            arguments.max_follow_requests,
+            arguments.max_bookmarks
         )
 
         with open(KNOWN_FOLLOWINGS_FILE, "w", encoding="utf-8") as f:
