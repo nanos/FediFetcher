@@ -24,8 +24,9 @@ argparser.add_argument('--max-followers', required = False, type=int, default=0,
 argparser.add_argument('--max-follow-requests', required = False, type=int, default=0, help="Backfill posts of the API key owners pending follow requests. We'll backfill at most this many requester's posts")
 argparser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
 argparser.add_argument('--lock-hours', required = False, type=int, default=24, help="The lock timeout in hours.")
-argparser.add_argument('--finished-callback', required = False, default=None, help="Provide a callback url that will be pinged when processing is complete. You can use this for 'dead man switch' monitoring of your task")
-argparser.add_argument('--started-callback', required = False, default=None, help="Provide a callback url that will be pinged when processing is starting. You can use this for 'dead man switch' monitoring of your task")
+argparser.add_argument('--on-done', required = False, default=None, help="Provide a url that will be pinged when processing has completed. You can use this for 'dead man switch' monitoring of your task")
+argparser.add_argument('--on-start', required = False, default=None, help="Provide a url that will be pinged when processing is starting. You can use this for 'dead man switch' monitoring of your task")
+argparser.add_argument('--on-fail', required = False, default=None, help="Provide a url that will be pinged when processing has failed. You can use this for 'dead man switch' monitoring of your task")
 
 def pull_context(
     server,
@@ -692,6 +693,14 @@ if __name__ == "__main__":
 
     arguments = argparser.parse_args()
 
+    runId = uuid.uuid4()
+
+    if(arguments.on_start != None):
+        try:
+            get(f"{arguments.on_start}?rid={runId}")
+        except Exception as ex:
+            log(f"Error getting callback url: {ex}")
+
     LOCK_FILE = 'artifacts/lock.lock'
 
     if( os.path.exists(LOCK_FILE)):
@@ -706,19 +715,21 @@ if __name__ == "__main__":
                 log(f"Lock file has expired. Removed lock file.")
             else:
                 log(f"Lock file age is {datetime.now() - lock_time} - below --lock-hours={arguments.lock_hours} provided.")
+                if(arguments.on_fail != None):
+                    try:
+                        get(f"{arguments.on_fail}?rid={runId}")
+                    except Exception as ex:
+                        log(f"Error getting callback url: {ex}")
                 sys.exit(1)
 
         except Exception:
             log(f"Cannot read logfile age - aborting.")
+            if(arguments.on_fail != None):
+                try:
+                    get(f"{arguments.on_fail}?rid={runId}")
+                except Exception as ex:
+                    log(f"Error getting callback url: {ex}")
             sys.exit(1)
-
-    runId = uuid.uuid4()
-
-    if(arguments.started_callback != None):
-        try:
-            get(f"{arguments.started_callback}?rid={runId}")
-        except Exception as ex:
-            log(f"Error getting callback url: {ex}")
 
     with open(LOCK_FILE, "w", encoding="utf-8") as f:
         f.write(f"{datetime.now()}")
@@ -770,9 +781,9 @@ if __name__ == "__main__":
 
         os.remove(LOCK_FILE)
 
-        if(arguments.finished_callback != None):
+        if(arguments.on_done != None):
             try:
-                get(f"{arguments.finished_callback}?rid={runId}")
+                get(f"{arguments.on_done}?rid={runId}")
             except Exception as ex:
                 log(f"Error getting callback url: {ex}")
 
@@ -781,4 +792,9 @@ if __name__ == "__main__":
     except Exception as ex:
         os.remove(LOCK_FILE)
         log(f"Job failed after {datetime.now() - start}.")
+        if(arguments.on_fail != None):
+            try:
+                get(f"{arguments.on_fail}?rid={runId}")
+            except Exception as ex:
+                log(f"Error getting callback url: {ex}")
         raise
