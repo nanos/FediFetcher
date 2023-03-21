@@ -10,6 +10,7 @@ import sys
 import requests
 import time
 import argparse
+import uuid
 
 argparser=argparse.ArgumentParser()
 
@@ -24,6 +25,7 @@ argparser.add_argument('--max-follow-requests', required = False, type=int, defa
 argparser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
 argparser.add_argument('--lock-hours', required = False, type=int, default=24, help="The lock timeout in hours.")
 argparser.add_argument('--finished-callback', required = False, default=None, help="Provide a callback url that will be pinged when processing is complete. You can use this for 'dead man switch' monitoring of your task")
+argparser.add_argument('--started-callback', required = False, default=None, help="Provide a callback url that will be pinged when processing is starting. You can use this for 'dead man switch' monitoring of your task")
 
 def pull_context(
     server,
@@ -710,6 +712,14 @@ if __name__ == "__main__":
             log(f"Cannot read logfile age - aborting.")
             sys.exit(1)
 
+    runId = uuid.uuid4()
+
+    if(arguments.started_callback != None):
+        try:
+            get(f"{arguments.started_callback}?rid={runId}")
+        except Exception as ex:
+            log(f"Error getting callback url: {ex}")
+
     with open(LOCK_FILE, "w", encoding="utf-8") as f:
         f.write(f"{datetime.now()}")
 
@@ -762,7 +772,7 @@ if __name__ == "__main__":
 
         if(arguments.finished_callback != None):
             try:
-                get(arguments.finished_callback)
+                get(f"{arguments.finished_callback}?rid={runId}")
             except Exception as ex:
                 log(f"Error getting callback url: {ex}")
 

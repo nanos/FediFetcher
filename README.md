@@ -55,7 +55,8 @@ Keep in mind that [the schedule event can be delayed during periods of high load
 If you want to, you can of course also run this script locally as a cron job:
 
 1. To get started, clone this repository. (If you'd rather not clone the full repository, you can simply download the `find_posts.py` file, but don't forget to create a directory called `artifacts` in the same directory: The script expects this directory to be present, and stores information about posts it has already pushed into your instance in that directory, to avoid pushing the same posts over and over again.)
-2. Then simply run this script like so: `python find_posts.py --access-token=<TOKEN> --server=<SERVER>` etc. (run `python find_posts.py -h` to get a list of all options)
+2. Install requirements: `pip install -r requirements.txt`
+3. Then simply run this script like so: `python find_posts.py --access-token=<TOKEN> --server=<SERVER>` etc. (run `python find_posts.py -h` to get a list of all options)
 
 When setting up your cronjob, we are using file based locking to avoid multiple overlapping executions of the script. The timeout period for the lock can be configured using `--lock-hours`.
 
