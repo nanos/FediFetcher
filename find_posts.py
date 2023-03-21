@@ -22,6 +22,7 @@ argparser.add_argument('--max-followings', required = False, type=int, default=0
 argparser.add_argument('--max-followers', required = False, type=int, default=0, help="Backfill posts for new accounts following --user. We'll backfill at most this many followers' posts")
 argparser.add_argument('--max-follow-requests', required = False, type=int, default=5, help="Backfill posts of the API key owners pending follow requests. We'll backfill at most this many requester's posts")
 argparser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
+argparser.add_argument('--lock-hours', required = False, type=int, default=0, help="The lock timeout in hours.")
 
 def pull_context(
     server,
@@ -684,13 +685,32 @@ class OrderedSet:
 if __name__ == "__main__":
     start = datetime.now()
 
-    log(f"Beginning script")
+    log(f"Starting mastodon_get_replies")
+
+    arguments = argparser.parse_args()
 
     LOCK_FILE = 'artifacts/lock.lock'
 
     if( os.path.exists(LOCK_FILE)):
         log(f"Lock file exists at {LOCK_FILE}")
-        sys.exit(1)
+
+        if(arguments.lock_hours <= 0):
+            sys.exit(1)
+
+        try:
+            with open(LOCK_FILE, "r", encoding="utf-8") as f:
+                lock_time = parser.parse(f.read())
+
+            if (datetime.now() - lock_time).total_seconds() >= arguments.lock_hours * 60 * 60: 
+                os.remove(LOCK_FILE)
+                log(f"Lock file has expired. Removed lock file.")
+            else:
+                log(f"Lock file age is {datetime.now() - lock_time} - below --lock-hours={arguments.lock_hours} provided.")
+                sys.exit(1)
+
+        except Exception:
+            log(f"Cannot read logfile age - aborting.")
+            sys.exit(1)
 
     with open(LOCK_FILE, "w", encoding="utf-8") as f:
         f.write(f"{datetime.now()}")
@@ -717,8 +737,6 @@ if __name__ == "__main__":
             with open(KNOWN_FOLLOWINGS_FILE, "r", encoding="utf-8") as f:
                 KNOWN_FOLLOWINGS = OrderedSet(f.read().splitlines())
 
-        arguments = argparser.parse_args()
-
         pull_context(
             arguments.server,
             arguments.access_token,
@@ -742,11 +760,11 @@ if __name__ == "__main__":
         with open(REPLIED_TOOT_SERVER_IDS_FILE, "w", encoding="utf-8") as f:
             json.dump(dict(list(REPLIED_TOOT_SERVER_IDS.items())[-10000:]), f)
 
-        os.remove(LOCK_FILE)
+        # os.remove(LOCK_FILE)
 
         log(f"Processing finished in {datetime.now() - start}.")
 
     except Exception as ex:
-        os.remove(LOCK_FILE)
+        # os.remove(LOCK_FILE)
         log(f"Job failed after {datetime.now() - start}.")
         raise
