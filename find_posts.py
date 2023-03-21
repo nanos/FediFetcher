@@ -757,11 +757,11 @@ if __name__ == "__main__":
         with open(REPLIED_TOOT_SERVER_IDS_FILE, "w", encoding="utf-8") as f:
             json.dump(dict(list(REPLIED_TOOT_SERVER_IDS.items())[-10000:]), f)
 
-        # os.remove(LOCK_FILE)
+        os.remove(LOCK_FILE)
 
         log(f"Processing finished in {datetime.now() - start}.")
 
     except Exception as ex:
-        # os.remove(LOCK_FILE)
+        os.remove(LOCK_FILE)
         log(f"Job failed after {datetime.now() - start}.")
         raise
