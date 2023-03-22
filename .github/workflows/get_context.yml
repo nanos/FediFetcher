@@ -39,5 +39,5 @@ jobs:
           name: artifacts
           path: |
             artifacts
-      - name: Keep workflow alive
-        uses: gautamkrishnar/keepalive-workflow@v1
+#       - name: Keep workflow alive
+#         uses: gautamkrishnar/keepalive-workflow@v1
