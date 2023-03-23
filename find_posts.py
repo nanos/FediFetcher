@@ -707,7 +707,7 @@ if __name__ == "__main__":
 
     runId = uuid.uuid4()
 
-    if(arguments.on_start != None):
+    if(arguments.on_start != None and arguments.on_start != ''):
         try:
             get(f"{arguments.on_start}?rid={runId}")
         except Exception as ex:
@@ -727,7 +727,7 @@ if __name__ == "__main__":
                 log(f"Lock file has expired. Removed lock file.")
             else:
                 log(f"Lock file age is {datetime.now() - lock_time} - below --lock-hours={arguments.lock_hours} provided.")
-                if(arguments.on_fail != None):
+                if(arguments.on_fail != None and arguments.on_fail != ''):
                     try:
                         get(f"{arguments.on_fail}?rid={runId}")
                     except Exception as ex:
@@ -736,7 +736,7 @@ if __name__ == "__main__":
 
         except Exception:
             log(f"Cannot read logfile age - aborting.")
-            if(arguments.on_fail != None):
+            if(arguments.on_fail != None and arguments.on_fail != ''):
                 try:
                     get(f"{arguments.on_fail}?rid={runId}")
                 except Exception as ex:
@@ -794,7 +794,7 @@ if __name__ == "__main__":
 
         os.remove(LOCK_FILE)
 
-        if(arguments.on_done != None):
+        if(arguments.on_done != None and arguments.on_done != ''):
             try:
                 get(f"{arguments.on_done}?rid={runId}")
             except Exception as ex:
@@ -805,7 +805,7 @@ if __name__ == "__main__":
     except Exception as ex:
         os.remove(LOCK_FILE)
         log(f"Job failed after {datetime.now() - start}.")
-        if(arguments.on_fail != None):
+        if(arguments.on_fail != None and arguments.on_fail != ''):
             try:
                 get(f"{arguments.on_fail}?rid={runId}")
             except Exception as ex:
