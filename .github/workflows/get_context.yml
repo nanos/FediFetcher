@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Get latest release
         run: |
-          curl -s https://api.github.com/repos/nanos/mastodon_get_replies/releases/latest | jq .zipball_url | xargs wget -O download.zip
+          curl --retry 20 -s https://api.github.com/repos/nanos/mastodon_get_replies/releases/latest | jq .zipball_url | xargs wget -O download.zip
           unzip -j download.zip
           mkdir artifacts
           ls -lR
