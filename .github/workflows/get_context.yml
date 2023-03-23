@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: mastodon
     steps:
-      - name: Checkout repository
+      - name: Checkout original repository
         uses: actions/checkout@v3
         with:
           repository: nanos/mastodon_get_replies
@@ -40,7 +40,7 @@ jobs:
           name: artifacts
           path: |
             artifacts
-      - name: Swap back to main branch for keeping workflow alive
-        run: git checkout main
+      - name: Checkout user's forked repository for keeping workflow alive
+        uses: actions/checkout@v3
       - name: Keep workflow alive
         uses: gautamkrishnar/keepalive-workflow@v1
