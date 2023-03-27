@@ -31,7 +31,7 @@ spec:
                 claimName: fedifetcher-pvc
           containers:
             - name: FediFetcher
-              image: ghcr.io/nanos/FediFetcher:latest
+              image: ghcr.io/nanos/fedifetcher:latest
               args:
                 - --server=your.server.social
                 - --access-token=TOKEN
