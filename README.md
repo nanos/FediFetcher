@@ -1,31 +1,28 @@
-# Pull missing responses into Mastodon
+# FediFetcher for Mastodon
 
-This GitHub repository provides a GitHub action that runs every 10 mins, doing the following:
+This GitHub repository provides a simple script that can pull missing posts into Mastodon using the Mastodon API. FediFetcher has no further dependencies, and can be run as either a GitHub Action, as a scheduled cron job, or a pre-packaged container. Here is what FediFetcher can do:
 
-1. It can [pull remote replies into your instance](https://blog.thms.uk/2023/03/pull-missing-responses-into-mastodon?utm_source=github), using the Mastodon API. That part itself has two parts:
-   1. It gets remote replies to posts that users on your instance have already replied to during the last `REPLY_INTERVAL_IN_HOURS` hours, and adds them to your own server.
-   2. It gets remote replies to the last `HOME_TIMELINE_LENGTH` posts from your home timeline, and adds them to your own server.
-   3. It gets remote replies to the last `MAX_BOOKMARKS` of your bookmarks, and adds them to your own server.
-2. It can also [backfill posts](https://blog.thms.uk/2023/03/backfill-recently-followed-accounts?utm_source=github):
-   1. from the last `MAX_FOLLOWINGS` users that you have followed.
-   2. form the last `MAX_FOLLOWERS` users that have followed you.
-   3. form the last `MAX_FOLLOW_REQUESTS` users that have sent you a follow request.
+1. It can pull missing remote replies to posts that are already on your server into your server. It can
+   1. fetch missing replies to posts that users on your instance have already replied to,
+   2. fetch missing replies to the most recent posts in your home timeline,
+   3. fetch missing replies to your bookmarks.
+2. It can also backfill profiles on your instance. In particular it can
+   1. fetch missing recent posts from users that you have recently followed,
+   2. fetch missing recent posts form users that have recently followed you,
+   3. fetch missing recent posts form users that have recently sent you a follow request.
 
-Each part can be disabled completely, and all of the parameters are configurable.
+Each part of this script is fully configurable, and you can completely disable parts that you are not interested in.
 
-**Be aware, that this script may run for a long time, if these values are too high.** Experiment a bit with what works for you, by starting with fairly small numbers (maybe `HOME_TIMELINE_LENGTH = 200`, `REPLY_INTERVAL_IN_HOURS = 12`) and increase the numbers as you see fit.
+FediFetcher will store posts it has already pulled in, as well as profiles it has already backfilled on disk, to prevent re-fetching the same info in subsequent executions.
 
-For full context and discussion on why this is needed, read the following two blog posts: 
-
-- The original announcement post: [Pull missing responses into Mastodon](https://blog.thms.uk/2023/03/pull-missing-responses-into-mastodon?utm_source=github)
-- The announcement for v3.0.0: [Pull missing posts from recently followed accounts into Mastodon](https://blog.thms.uk/2023/03/backfill-recently-followed-accounts?utm_source=github)
+**Be aware, that this script may run for a *very* long time.** This is particularly true, the first time this script runs, and/or if you enable all parts of this script. You should ensure that you take steps to prevent multiple overlapping executions of this script, as that will lead to unpleasant results.
 
 ## Setup
 
-You can run this script either as a GitHub Action, as a scheduled cron job on your local machine, or from a pre-packed container.
+You can run FediFetcher either as a GitHub Action, as a scheduled cron job on your local machine/server, or from a pre-packed container.
 ### 1) Get the required access token:
 
-Regardless of how you want to run this script, you must first get an access token:
+Regardless of how you want to run FediFetcher, you must first get an access token:
 
 1. In Mastodon go to Preferences > Development > New Application
    1. give it a nice name
@@ -35,7 +32,7 @@ Regardless of how you want to run this script, you must first get an access toke
 
 ### 2.1) Configure and run the GitHub Action
 
-To run this script as a GitHub Action:
+To run FediFetcher as a GitHub Action:
 
 1. Fork this repository
 2. Add your access token:
@@ -49,38 +46,38 @@ To run this script as a GitHub Action:
    4. Add environment variables to configure your action as described below.
 4. Finally go to the Actions tab and enable the action. The action should now automatically run approximately once every 10 min. 
 
-Keep in mind that [the schedule event can be delayed during periods of high loads of GitHub Actions workflow runs](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule), and that [scheduled workflows are automatically disabled when no repository activity has occurred in 60 days](https://github.com/nanos/mastodon_get_replies/issues/17).
+Keep in mind that [the schedule event can be delayed during periods of high loads of GitHub Actions workflow runs](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule).
 
-### 2.2) Run this script locally as a cron job
+### 2.2) Run FediFetcher locally as a cron job
 
-If you want to, you can of course also run this script locally as a cron job:
+If you want to, you can of course also run FediFetcher locally as a cron job:
 
-1. To get started, clone this repository. (If you'd rather not clone the full repository, you can simply download the `find_posts.py` file, but don't forget to create a directory called `artifacts` in the same directory: The script expects this directory to be present, and stores information about posts it has already pushed into your instance in that directory, to avoid pushing the same posts over and over again.)
+1. To get started, clone this repository.
 2. Install requirements: `pip install -r requirements.txt`
-3. Then simply run this script like so: `python find_posts.py --access-token=<TOKEN> --server=<SERVER>` etc. (run `python find_posts.py -h` to get a list of all options)
+3. Then simply run this script like so: `python find_posts.py --access-token=<TOKEN> --server=<SERVER>` etc. (Read below, or run `python find_posts.py -h` to get a list of all options)
 
-When setting up your cronjob, we are using file based locking to avoid multiple overlapping executions of the script. The timeout period for the lock can be configured using `--lock-hours`.
+When using a cronjob, we are using file based locking to avoid multiple overlapping executions of the script. The timeout period for the lock can be configured using `--lock-hours`.
 
-If you are running this script locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
+If you are running FediFetcher locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
 
-### 2.3) Run this script from a container
+### 2.3) Run FediFetcher from a container
 
-This script is also available in a pre-packaged container, [mastodon_get_replies](https://github.com/nanos/mastodon_get_replies/pkgs/container/mastodon_get_replies) - Thank you [@nikdoof](https://github.com/nikdoof).
+FediFetcher is also available in a pre-packaged container, [FediFetcher](https://github.com/nanos/FediFetcher/pkgs/container/mastodon_get_replies) - Thank you [@nikdoof](https://github.com/nikdoof).
 
-1. Pull the container from `ghcr.io`, using Docker or your container tool of choice: `docker pull ghcr.io/nanos/mastodon_get_replies:latest`
-2. Run the container, passing the command line arguments like running the script directly: `docker run -it ghcr.io/nanos/mastodon_get_replies:latest --access-token=<TOKEN> --server=<SERVER>`
+1. Pull the container from `ghcr.io`, using Docker or your container tool of choice: `docker pull ghcr.io/nanos/FediFetcher:latest`
+2. Run the container, passing the command line arguments like running the script directly: `docker run -it ghcr.io/nanos/FediFetcher:latest --access-token=<TOKEN> --server=<SERVER>`
 
-The same rules for running this as a cron job apply to running the container, don't overlap any executions.
+The same rules for running this as a cron job apply to running the container: don't overlap any executions.
 
 Persistent files are stored in `/app/artifacts` within the container, so you may want to map this to a local folder on your system.
 
-An example Kubernetes CronJob for running the container is included in the [`examples`](https://github.com/nanos/mastodon_get_replies/tree/main/examples) folder.
+An example Kubernetes CronJob for running the container is included in the [`examples`](https://github.com/nanos/FediFetcher/tree/main/examples) folder.
 
 ### Configuration options
 
-Please see below for a list of configuration options.
+Please see below for a list of configuration options. Use the 'Environment Variable Name' if you are running FediFetcher has a GitHub Action, otherwise use the 'Command line flag'.
 
-| Environment Variable Name (if using GitHub Action) | Command line flag (if using cron, or the container) | Required? | Notes |
+| Environment Variable Name | Command line flag | Required? | Notes |
 |:---------------------------------------------------|:----------------------------------------------------|-----------|:------|
 | -- | `--access-token` | Yes | The access token. If using GitHub action, this needs to be provided as a Secret called  `ACCESS_TOKEN` |
 |`MASTODON_SERVER`|`--server`|Yes|The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`. |
@@ -111,4 +108,4 @@ Please see below for a list of configuration options.
 
 ## Acknowledgments
 
-This script is mostly taken from [Abhinav Sarkar](https://notes.abhinavsarkar.net/2023/mastodon-context), with just some additions and alterations. Thank you Abhinav!
+The original inspiration of this script, as well as parts of its implementation are taken from [Abhinav Sarkar](https://notes.abhinavsarkar.net/2023/mastodon-context). Thank you Abhinav!

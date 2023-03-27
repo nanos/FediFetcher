@@ -509,7 +509,7 @@ def get_redirect_url(url):
     """get the URL given URL redirects to"""
     try:
         resp = requests.head(url, allow_redirects=False, timeout=5,headers={
-            'User-Agent': 'mastodon_get_replies (https://go.thms.uk/mgr)'
+            'User-Agent': 'FediFetcher (https://go.thms.uk/mgr)'
         })
     except Exception as ex:
         log(f"Error getting redirect URL for URL {url}. Exception: {ex}")
@@ -651,7 +651,7 @@ def get(url, headers = {}, timeout = 0, max_tries = 5):
     """A simple wrapper to make a get request while providing our user agent, and respecting rate limits"""
     h = headers.copy()
     if 'User-Agent' not in h:
-        h['User-Agent'] = 'mastodon_get_replies (https://go.thms.uk/mgr)'
+        h['User-Agent'] = 'FediFetcher (https://go.thms.uk/mgr)'
 
     if timeout == 0:
         timeout = arguments.http_timeout
@@ -701,7 +701,7 @@ class OrderedSet:
 if __name__ == "__main__":
     start = datetime.now()
 
-    log(f"Starting mastodon_get_replies")
+    log(f"Starting FediFetcher")
 
     arguments = argparser.parse_args()
 
