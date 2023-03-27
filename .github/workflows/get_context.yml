@@ -11,21 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     environment: mastodon
     steps:
-      - name: Get latest release
-        run: |
-          curl --retry 20 -L -s https://api.github.com/repos/nanos/mastodon_get_replies/releases/latest | jq .zipball_url | xargs wget -O download.zip
-          unzip -j download.zip
-          mkdir artifacts
-          ls -lR
+      - name: Checkout original repository
+        uses: actions/checkout@v3
+        with:
+          repository: nanos/FediFetcher
+          fetch-depth: 0
+      - name: Checkout latest release tag
+        run: git checkout $(git describe --tags)
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-         python-version: '3.10' 
+         python-version: '3.10'
          cache: 'pip' # caching pip dependencies
       - run: pip install -r requirements.txt
       - name: Download all workflow run artifacts
         uses: dawidd6/action-download-artifact@v2
-        with: 
+        with:
           name: artifacts
           workflow: get_context.yml
           if_no_artifact_found: warn
@@ -39,7 +40,7 @@ jobs:
           name: artifacts
           path: |
             artifacts
-      - name: Check out, so that we can keep the workflow alive
+      - name: Checkout user's forked repository for keeping workflow alive
         uses: actions/checkout@v3
       - name: Keep workflow alive
         uses: gautamkrishnar/keepalive-workflow@v1
