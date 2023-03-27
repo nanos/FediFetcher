@@ -25,5 +25,5 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/FediFetcher:${{ github.ref_name }}
-            ghcr.io/${{ github.repository_owner }}/FediFetcher:latest
+            ghcr.io/${{ github.repository_owner }}/fedifetcher:${{ github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/fedifetcher:latest

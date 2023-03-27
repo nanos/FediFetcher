@@ -62,7 +62,7 @@ If you are running FediFetcher locally, my recommendation is to run it manually 
 
 ### 2.3) Run FediFetcher from a container
 
-FediFetcher is also available in a pre-packaged container, [FediFetcher](https://github.com/nanos/FediFetcher/pkgs/container/mastodon_get_replies) - Thank you [@nikdoof](https://github.com/nikdoof).
+FediFetcher is also available in a pre-packaged container, [FediFetcher](https://github.com/nanos/FediFetcher/pkgs/container/fedifetcher) - Thank you [@nikdoof](https://github.com/nikdoof).
 
 1. Pull the container from `ghcr.io`, using Docker or your container tool of choice: `docker pull ghcr.io/nanos/FediFetcher:latest`
 2. Run the container, passing the command line arguments like running the script directly: `docker run -it ghcr.io/nanos/FediFetcher:latest --access-token=<TOKEN> --server=<SERVER>`
