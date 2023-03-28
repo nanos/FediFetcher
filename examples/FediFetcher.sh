@@ -2,6 +2,10 @@
 # to run every 10 minutes from your cron job.
 # Supply any other arguments, as you see fit.
 
+
+# Sample schedule:
+# */10 * * * * /usr/bin/bash /path/to/FediFetcher.sh
+
 ###################### IMPORTANT ######################
 #                                                     #
 #  YOU SHOULD RUN THIS SCRIPT MANUALLY AT LEAST ONCE  #

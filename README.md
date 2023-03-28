@@ -57,7 +57,9 @@ If you want to, you can of course also run FediFetcher locally as a cron job:
 
 1. To get started, clone this repository.
 2. Install requirements: `pip install -r requirements.txt`
-3. Then simply run this script like so: `python find_posts.py --access-token=<TOKEN> --server=<SERVER>` etc. An example script can be found in the [`examples`](https://github.com/nanos/FediFetcher/tree/main/examples) folder (Read below, or run `python find_posts.py -h` to get a list of all options)
+3. Then simply run this script like so: `python find_posts.py --access-token=<TOKEN> --server=<SERVER>` etc.  (Read below, or run `python find_posts.py -h` to get a list of all options.)
+ 
+An example script can be found in the [`examples`](https://github.com/nanos/FediFetcher/tree/main/examples) folder.
 
 When using a cronjob, we are using file based locking to avoid multiple overlapping executions of the script. The timeout period for the lock can be configured using `--lock-hours`.
 
