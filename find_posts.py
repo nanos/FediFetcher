@@ -23,6 +23,8 @@ argparser.add_argument('--max-followings', required = False, type=int, default=0
 argparser.add_argument('--max-followers', required = False, type=int, default=0, help="Backfill posts for new accounts following --user. We'll backfill at most this many followers' posts")
 argparser.add_argument('--max-follow-requests', required = False, type=int, default=0, help="Backfill posts of the API key owners pending follow requests. We'll backfill at most this many requester's posts")
 argparser.add_argument('--max-bookmarks', required = False, type=int, default=0, help="Fetch remote replies to the API key owners Bookmarks. We'll fetch replies to at most this many bookmarks")
+argparser.add_argument('--from-notifications', required = False, type=int, default=0, help="Backfill accounts of anyone appearing in your notifications, during the last hours")
+argparser.add_argument('--remember-users-for-hours', required=False, type=int, default=24*7, help="How long to remember users that you aren't following for, before trying to backfill them again.")
 argparser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
 argparser.add_argument('--lock-hours', required = False, type=int, default=24, help="The lock timeout in hours.")
 argparser.add_argument('--on-done', required = False, default=None, help="Provide a url that will be pinged when processing has completed. You can use this for 'dead man switch' monitoring of your task")
@@ -41,10 +43,14 @@ def pull_context(
     known_followings,
     max_followers,
     max_follow_requests,
-    max_bookmarks
+    max_bookmarks,
+    recently_checked_users,
+    from_notifications
 ):
     
     parsed_urls = {}
+
+    all_known_users = OrderedSet(list(known_followings) + list(recently_checked_users))
 
     if reply_interval_hours > 0:
         """pull the context toots of toots user replied to, from their
@@ -68,22 +74,27 @@ def pull_context(
         known_context_urls = get_all_known_context_urls(server, timeline_toots,parsed_urls)
         add_context_urls(server, access_token, known_context_urls, seen_urls)
 
-    if max_followings > 0 and backfill_followings_for_user != '':
-        log(f"Getting posts from {backfill_followings_for_user}'s last {max_followings} followings")
-        user_id = get_user_id(server, backfill_followings_for_user)
-        followings = get_new_followings(server, user_id, max_followings, known_followings)
-        add_following_posts(server, access_token, followings, known_followings, seen_urls)
+    if max_followings > 0:
+        log(f"Getting posts from last {max_followings} followings")
+        user_id = get_user_id(server, backfill_followings_for_user, access_token)
+        followings = get_new_followings(server, user_id, max_followings, all_known_users)
+        add_user_posts(server, access_token, followings, known_followings, all_known_users, seen_urls)
     
-    if max_followers > 0 and backfill_followings_for_user != '':
-        log(f"Getting posts from {backfill_followings_for_user}'s last {max_followers} followers")
-        user_id = get_user_id(server, backfill_followings_for_user)
-        followers = get_new_followers(server, user_id, max_followers, known_followings)
-        add_following_posts(server, access_token, followers, known_followings, seen_urls)
+    if max_followers > 0:
+        log(f"Getting posts from last {max_followers} followers")
+        user_id = get_user_id(server, backfill_followings_for_user, access_token)
+        followers = get_new_followers(server, user_id, max_followers, all_known_users)
+        add_user_posts(server, access_token, followers, recently_checked_users, all_known_users, seen_urls)
 
     if max_follow_requests > 0:
         log(f"Getting posts from last {max_follow_requests} follow requests")
-        follow_requests = get_new_follow_requests(server, access_token, max_follow_requests, known_followings)
-        add_following_posts(server, access_token, follow_requests, known_followings, seen_urls)
+        follow_requests = get_new_follow_requests(server, access_token, max_follow_requests, all_known_users)
+        add_user_posts(server, access_token, follow_requests, recently_checked_users, all_known_users, seen_urls)
+
+    if from_notifications > 0:
+        log(f"Getting notifications for last {from_notifications} hours")
+        notification_users = get_notification_users(server, access_token, all_known_users, from_notifications)
+        add_user_posts(server, access_token, notification_users, recently_checked_users, all_known_users, seen_urls)
 
     if max_bookmarks > 0:
         log(f"Pulling replies to the last {max_bookmarks} bookmarks")
@@ -91,12 +102,29 @@ def pull_context(
         known_context_urls = get_all_known_context_urls(server, bookmarks,parsed_urls)
         add_context_urls(server, access_token, known_context_urls, seen_urls)
 
+def get_notification_users(server, access_token, known_users, max_age):
+    since = datetime.now(datetime.now().astimezone().tzinfo) - timedelta(hours=max_age)
+    notifications = get_paginated_mastodon(f"https://{server}/api/v1/notifications", since, headers={
+        "Authorization": f"Bearer {access_token}",
+    })
+    notification_users = []
+    for notification in notifications:
+        notificationDate = parser.parse(notification['created_at'])
+        if(notificationDate >= since and notification['account'] not in notification_users):
+            notification_users.append(notification['account'])
+
+    new_notification_users = filter_known_users(notification_users, known_users)
+
+    log(f"Found {len(notification_users)} users in notifications, {len(new_notification_users)} of which are new")
+
+    return new_notification_users
+
 def get_bookmarks(server, access_token, max):
     return get_paginated_mastodon(f"https://{server}/api/v1/bookmarks", max, {
         "Authorization": f"Bearer {access_token}",
     })
 
-def add_following_posts(server, access_token, followings, know_followings, seen_urls):
+def add_user_posts(server, access_token, followings, know_followings, all_known_users, seen_urls):
     for user in followings:
         posts = get_user_posts(user, know_followings, server)
 
@@ -114,6 +142,7 @@ def add_following_posts(server, access_token, followings, know_followings, seen_
             log(f"Added {count} posts for user {user['acct']} with {failed} errors")
             if failed == 0:
                 know_followings.add(user['acct'])
+                all_known_users.add(user['acct'])
 
 def get_user_posts(user, know_followings, server):
     parsed_url = parse_user_url(user['url'])
@@ -160,24 +189,24 @@ def get_new_follow_requests(server, access_token, max, known_followings):
     })
 
     # Remove any we already know about    
-    new_follow_requests = list(filter(
-        lambda user: user['acct'] not in known_followings,
-        follow_requests
-    ))
+    new_follow_requests = filter_known_users(follow_requests, known_followings)
     
     log(f"Got {len(follow_requests)} follow_requests, {len(new_follow_requests)} of which are new")
         
     return new_follow_requests
+
+def filter_known_users(users, known_users):
+    return list(filter(
+        lambda user: user['acct'] not in known_users,
+        users
+    ))
 
 def get_new_followers(server, user_id, max, known_followers):
     """Get any new followings for the specified user, up to the max number provided"""
     followers = get_paginated_mastodon(f"https://{server}/api/v1/accounts/{user_id}/followers", max)
 
     # Remove any we already know about    
-    new_followers = list(filter(
-        lambda user: user['acct'] not in known_followers,
-        followers
-    ))
+    new_followers = filter_known_users(followers, known_followers)
     
     log(f"Got {len(followers)} followers, {len(new_followers)} of which are new")
         
@@ -188,22 +217,29 @@ def get_new_followings(server, user_id, max, known_followings):
     following = get_paginated_mastodon(f"https://{server}/api/v1/accounts/{user_id}/following", max)
 
     # Remove any we already know about    
-    new_followings = list(filter(
-        lambda user: user['acct'] not in known_followings,
-        following
-    ))
+    new_followings = filter_known_users(following, known_followings)
     
     log(f"Got {len(following)} followings, {len(new_followings)} of which are new")
         
     return new_followings
     
 
-def get_user_id(server, user):
+def get_user_id(server, user = None, access_token = None):
     """Get the user id from the server, using a username"""
-    url = f"https://{server}/api/v1/accounts/lookup?acct={user}"
 
+    headers = {}
+
+    if user != None and user != '':
+        url = f"https://{server}/api/v1/accounts/lookup?acct={user}"
+    elif access_token != None:
+        url = f"https://{server}/api/v1/accounts/verify_credentials"
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+        }
+    else:
+        raise Exception('You must supply either a user name or an access token, to get an user ID')
     
-    response = get(url)
+    response = get(url, headers=headers)
 
     if response.status_code == 200:
         return response.json()['id'] 
@@ -620,7 +656,12 @@ def add_context_url(url, server, access_token):
     
 def get_paginated_mastodon(url, max, headers = {}, timeout = 0, max_tries = 5):
     """Make a paginated request to mastodon"""
-    response = get(f"{url}?limit={max}", headers, timeout, max_tries)
+    if(isinstance(max, int)):
+        furl = f"{url}?limit={max}"
+    else:
+        furl = url
+
+    response = get(furl, headers, timeout, max_tries)
 
     if response.status_code != 200:
         if response.status_code == 401:
@@ -640,9 +681,14 @@ def get_paginated_mastodon(url, max, headers = {}, timeout = 0, max_tries = 5):
 
     result = response.json()
 
-    while len(result) < max and 'next' in response.links:
-        response = get(response.links['next']['url'], headers, timeout, max_tries)
-        result = result + response.json()
+    if(isinstance(max, int)):
+        while len(result) < max and 'next' in response.links:
+            response = get(response.links['next']['url'], headers, timeout, max_tries)
+            result = result + response.json()
+    else:
+        while parser.parse(result[-1]['created_at']) >= max and 'next' in response.links:
+            response = get(response.links['next']['url'], headers, timeout, max_tries)
+            result = result + response.json()
     
     return result
 
@@ -677,12 +723,28 @@ class OrderedSet:
 
     def __init__(self, iterable):
         self._dict = {}
-        for item in iterable:
-            self.add(item)
+        if isinstance(iterable, dict):
+            for item in iterable:
+                if isinstance(iterable[item], str):
+                    self.add(item, parser.parse(iterable[item]))
+                else:
+                    self.add(item, iterable[item])
+        else:
+            for item in iterable:
+                self.add(item)
 
-    def add(self, item):
+    def add(self, item, time = None):
         if item not in self._dict:
-            self._dict[item] = None
+            if(time == None):
+                self._dict[item] = datetime.now(datetime.now().astimezone().tzinfo)
+            else:
+                self._dict[item] = time
+
+    def pop(self, item):
+        self._dict.pop(item)
+    
+    def get(self, item):
+        return self._dict[item]
 
     def update(self, iterable):
         for item in iterable:
@@ -696,6 +758,9 @@ class OrderedSet:
 
     def __len__(self):
         return len(self._dict)
+    
+    def toJSON(self):
+        return json.dump(self._dict, f, default=str)
 
 
 if __name__ == "__main__":
@@ -751,6 +816,7 @@ if __name__ == "__main__":
         SEEN_URLS_FILE = "artifacts/seen_urls"
         REPLIED_TOOT_SERVER_IDS_FILE = "artifacts/replied_toot_server_ids"
         KNOWN_FOLLOWINGS_FILE = "artifacts/known_followings"
+        RECENTLY_CHECKED_USERS_FILE = "artifacts/recently_checked_users"
 
 
         SEEN_URLS = OrderedSet([])
@@ -768,6 +834,18 @@ if __name__ == "__main__":
             with open(KNOWN_FOLLOWINGS_FILE, "r", encoding="utf-8") as f:
                 KNOWN_FOLLOWINGS = OrderedSet(f.read().splitlines())
 
+        RECENTLY_CHECKED_USERS = OrderedSet({})
+        if os.path.exists(RECENTLY_CHECKED_USERS_FILE):
+            with open(RECENTLY_CHECKED_USERS_FILE, "r", encoding="utf-8") as f:
+                RECENTLY_CHECKED_USERS = OrderedSet(json.load(f))
+
+        # Remove any users whose last check is too long in the past from the list
+        for user in list(RECENTLY_CHECKED_USERS):
+            lastCheck = RECENTLY_CHECKED_USERS.get(user)
+            userAge = datetime.now(lastCheck.tzinfo) - lastCheck
+            if(userAge.total_seconds() > arguments.remember_users_for_hours * 60 * 60):
+                RECENTLY_CHECKED_USERS.pop(user)    
+
         pull_context(
             arguments.server,
             arguments.access_token,
@@ -780,8 +858,10 @@ if __name__ == "__main__":
             KNOWN_FOLLOWINGS,
             arguments.max_followers,
             arguments.max_follow_requests,
-            arguments.max_bookmarks
-        )
+            arguments.max_bookmarks,
+            RECENTLY_CHECKED_USERS,
+            arguments.from_notifications,
+        )        
 
         with open(KNOWN_FOLLOWINGS_FILE, "w", encoding="utf-8") as f:
             f.write("\n".join(list(KNOWN_FOLLOWINGS)[-10000:]))
@@ -791,6 +871,9 @@ if __name__ == "__main__":
 
         with open(REPLIED_TOOT_SERVER_IDS_FILE, "w", encoding="utf-8") as f:
             json.dump(dict(list(REPLIED_TOOT_SERVER_IDS.items())[-10000:]), f)
+
+        with open(RECENTLY_CHECKED_USERS_FILE, "w", encoding="utf-8") as f:
+            RECENTLY_CHECKED_USERS.toJSON()
 
         os.remove(LOCK_FILE)
 

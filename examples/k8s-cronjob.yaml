@@ -37,12 +37,10 @@ spec:
                 - --access-token=TOKEN
                 - --home-timeline-length
                 - "200"
-                - --reply-interval-in-hours
-                - "24"
                 - --max-followings
                 - "80"
-                - --max-followers
-                - "80"
+                - --from-notification
+                - "4"
               volumeMounts:
                 - name: artifacts
                   mountPath: /app/artifacts
