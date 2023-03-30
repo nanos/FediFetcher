@@ -74,6 +74,18 @@ def pull_context(
         known_context_urls = get_all_known_context_urls(server, timeline_toots,parsed_urls)
         add_context_urls(server, access_token, known_context_urls, seen_urls)
 
+        # Backfill any mentioned users
+        timeline_toots_with_mentions = list(filter(
+            lambda toot: len(toot['mentions']) > 0,
+            timeline_toots
+        ))
+
+        mentioned_users = []
+        for toot in timeline_toots_with_mentions:
+            mentioned_users = mentioned_users + toot['mentions']
+
+        add_user_posts(server, access_token, filter_known_users(mentioned_users, all_known_users), recently_checked_users, all_known_users, seen_urls)
+
     if max_followings > 0:
         log(f"Getting posts from last {max_followings} followings")
         user_id = get_user_id(server, backfill_followings_for_user, access_token)
@@ -126,23 +138,24 @@ def get_bookmarks(server, access_token, max):
 
 def add_user_posts(server, access_token, followings, know_followings, all_known_users, seen_urls):
     for user in followings:
-        posts = get_user_posts(user, know_followings, server)
+        if user['acct'] not in all_known_users:
+            posts = get_user_posts(user, know_followings, server)
 
-        if(posts != None):
-            count = 0
-            failed = 0
-            for post in posts:
-                if post['url'] != None and post['url'] not in seen_urls:
-                    added = add_post_with_context(post, server, access_token, seen_urls)
-                    if added is True:
-                        seen_urls.add(post['url'])
-                        count += 1
-                    else:
-                        failed += 1
-            log(f"Added {count} posts for user {user['acct']} with {failed} errors")
-            if failed == 0:
-                know_followings.add(user['acct'])
-                all_known_users.add(user['acct'])
+            if(posts != None):
+                count = 0
+                failed = 0
+                for post in posts:
+                    if post['url'] != None and post['url'] not in seen_urls:
+                        added = add_post_with_context(post, server, access_token, seen_urls)
+                        if added is True:
+                            seen_urls.add(post['url'])
+                            count += 1
+                        else:
+                            failed += 1
+                log(f"Added {count} posts for user {user['acct']} with {failed} errors")
+                if failed == 0:
+                    know_followings.add(user['acct'])
+                    all_known_users.add(user['acct'])
 
 def add_post_with_context(post, server, access_token, seen_urls):
     added = add_context_url(post['url'], server, access_token)
