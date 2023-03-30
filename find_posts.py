@@ -133,7 +133,7 @@ def add_user_posts(server, access_token, followings, know_followings, all_known_
             failed = 0
             for post in posts:
                 if post['url'] != None and post['url'] not in seen_urls:
-                    added = add_context_url(post['url'], server, access_token)
+                    added = add_post_with_context(post, server, access_token, seen_urls)
                     if added is True:
                         seen_urls.add(post['url'])
                         count += 1
@@ -143,6 +143,20 @@ def add_user_posts(server, access_token, followings, know_followings, all_known_
             if failed == 0:
                 know_followings.add(user['acct'])
                 all_known_users.add(user['acct'])
+
+def add_post_with_context(post, server, access_token, seen_urls):
+    added = add_context_url(post['url'], server, access_token)
+    if added is True:
+        seen_urls.add(post['url'])
+        parsed_urls = {}
+        parsed = parse_url(post['url'], parsed_urls)
+        if parsed == None:
+            return True
+        known_context_urls = get_all_known_context_urls(server, [post],parsed_urls)
+        add_context_urls(server, access_token, known_context_urls, seen_urls)
+        return True
+    
+    return False
 
 def get_user_posts(user, know_followings, server):
     parsed_url = parse_user_url(user['url'])
