@@ -74,15 +74,12 @@ def pull_context(
         known_context_urls = get_all_known_context_urls(server, timeline_toots,parsed_urls)
         add_context_urls(server, access_token, known_context_urls, seen_urls)
 
-        # Backfill any mentioned users
-        timeline_toots_with_mentions = list(filter(
-            lambda toot: len(toot['mentions']) > 0,
-            timeline_toots
-        ))
-
+        # Backfill any post authors, and any mentioned users
         mentioned_users = []
-        for toot in timeline_toots_with_mentions:
-            mentioned_users = mentioned_users + toot['mentions']
+        for toot in timeline_toots:
+            mentioned_users = mentioned_users + [toot['account']]
+            if(len(toot['mentions'])):
+                mentioned_users = mentioned_users + toot['mentions']
 
         add_user_posts(server, access_token, filter_known_users(mentioned_users, all_known_users), recently_checked_users, all_known_users, seen_urls)
 
@@ -138,7 +135,7 @@ def get_bookmarks(server, access_token, max):
 
 def add_user_posts(server, access_token, followings, know_followings, all_known_users, seen_urls):
     for user in followings:
-        if user['acct'] not in all_known_users:
+        if user['acct'] not in all_known_users and not user['url'].startswith(f"https://{server}/"):
             posts = get_user_posts(user, know_followings, server)
 
             if(posts != None):
