@@ -26,6 +26,7 @@ argparser.add_argument('--max-bookmarks', required = False, type=int, default=0,
 argparser.add_argument('--from-notifications', required = False, type=int, default=0, help="Backfill accounts of anyone appearing in your notifications, during the last hours")
 argparser.add_argument('--remember-users-for-hours', required=False, type=int, default=24*7, help="How long to remember users that you aren't following for, before trying to backfill them again.")
 argparser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
+argparser.add_argument('--backfill-with-context', required = False, type=bool, default=False, help="Backfill with context?")
 argparser.add_argument('--lock-hours', required = False, type=int, default=24, help="The lock timeout in hours.")
 argparser.add_argument('--on-done', required = False, default=None, help="Provide a url that will be pinged when processing has completed. You can use this for 'dead man switch' monitoring of your task")
 argparser.add_argument('--on-start', required = False, default=None, help="Provide a url that will be pinged when processing is starting. You can use this for 'dead man switch' monitoring of your task")
@@ -162,12 +163,13 @@ def add_post_with_context(post, server, access_token, seen_urls):
     added = add_context_url(post['url'], server, access_token)
     if added is True:
         seen_urls.add(post['url'])
-        parsed_urls = {}
-        parsed = parse_url(post['url'], parsed_urls)
-        if parsed == None:
-            return True
-        known_context_urls = get_all_known_context_urls(server, [post],parsed_urls)
-        add_context_urls(server, access_token, known_context_urls, seen_urls)
+        if arguments.backfill_with_context:
+            parsed_urls = {}
+            parsed = parse_url(post['url'], parsed_urls)
+            if parsed == None:
+                return True
+            known_context_urls = get_all_known_context_urls(server, [post],parsed_urls)
+            add_context_urls(server, access_token, known_context_urls, seen_urls)
         return True
     
     return False

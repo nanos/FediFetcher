@@ -109,6 +109,7 @@ Please find the list of all configuration options, including descriptions, below
 | `MAX_FOLLOWERS` | `--max-followers` | No | Provide to backfill profiles for your most recent followers. Determines how many of your last followers you want to backfill. Recommended value: `80`.
 | `MAX_FOLLOW_REQUESTS` | `--max-follow-requests` | No | Provide to backfill profiles for the API key owner's most recent pending follow requests. Determines how many of your last follow requests you want to backfill. Recommended value: `80`.
 | `FROM_NOTIFICATIONS` | `--from-notifications` | No | Provide to backfill profiles of anyone mentioned in your recent notifications. Determines how many hours of notifications you want to look at. Requires an access token with `read:notifications` scope. Recommended value: `1`, unless you run FediFetcher less than once per hour.
+|`BACKFILL_WITH_CONTEXT` | `--backfill-with-context` | No |
 | `REMEMBER_USERS_FOR_HOURS` | `--remember-users-for-hours` | No | How long between back-filling attempts for non-followed accounts? Defaults to `168`, i.e. one week.
 | `HTTP_TIMEOUT` | `--http-timeout` | No | The timeout for any HTTP requests to the Mastodon API in seconds. Defaults to `5`.
 | -- | `--lock-hours` | No | Determines after how many hours a lock file should be discarded. Not relevant when running the script as GitHub Action, as concurrency is prevented using a different mechanism. Recommended value: `24`.
