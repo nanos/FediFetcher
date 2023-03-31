@@ -78,13 +78,20 @@ def pull_context(
         # Backfill any post authors, and any mentioned users
         mentioned_users = []
         for toot in timeline_toots:
-            mentioned_users = mentioned_users + [toot['account']]
-            if(len(toot['mentions'])):
-                mentioned_users = mentioned_users + toot['mentions']
-            if(toot['reblog'] != None):
-                mentioned_users = mentioned_users + [toot['reblog']['account']]
-                if(len(toot['reblog']['mentions'])):
-                    mentioned_users = mentioned_users + toot['reblog']['mentions']
+            these_users = []
+            toot_created_at = parser.parse(toot['created_at'])
+            cutoff = datetime.now(datetime.now().astimezone().tzinfo) - timedelta(minutes=60)
+            if(len(mentioned_users) < 10 or toot_created_at > cutoff):
+                these_users.append(toot['account'])
+                if(len(toot['mentions'])):
+                    these_users += toot['mentions']
+                if(toot['reblog'] != None):
+                    these_users.append(toot['reblog']['account'])
+                    if(len(toot['reblog']['mentions'])):
+                        these_users += toot['reblog']['mentions']
+            for user in these_users:
+                if user not in mentioned_users and user['acct'] not in all_known_users:
+                    mentioned_users.append(user)
 
         add_user_posts(server, access_token, filter_known_users(mentioned_users, all_known_users), recently_checked_users, all_known_users, seen_urls)
 
