@@ -80,6 +80,10 @@ def pull_context(
             mentioned_users = mentioned_users + [toot['account']]
             if(len(toot['mentions'])):
                 mentioned_users = mentioned_users + toot['mentions']
+            if(toot['reblog'] != None):
+                mentioned_users = mentioned_users + [toot['reblog']['account']]
+                if(len(toot['reblog']['mentions'])):
+                    mentioned_users = mentioned_users + toot['reblog']['mentions']
 
         add_user_posts(server, access_token, filter_known_users(mentioned_users, all_known_users), recently_checked_users, all_known_users, seen_urls)
 
