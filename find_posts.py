@@ -822,12 +822,12 @@ if __name__ == "__main__":
 
         all_known_users = OrderedSet(list(known_followings) + list(recently_checked_users))
 
-        if arguments.reply_interval_hours > 0:
+        if arguments.reply_interval_in_hours > 0:
             """pull the context toots of toots user replied to, from their
             original server, and add them to the local server."""
-            user_ids = get_active_user_ids(arguments.server, arguments.access_token, arguments.reply_interval_hours)
+            user_ids = get_active_user_ids(arguments.server, arguments.access_token, arguments.reply_interval_in_hours)
             reply_toots = get_all_reply_toots(
-                arguments.server, user_ids, arguments.access_token, seen_urls, arguments.reply_interval_hours
+                arguments.server, user_ids, arguments.access_token, seen_urls, arguments.reply_interval_in_hours
             )
             known_context_urls = get_all_known_context_urls(arguments.server, reply_toots,parsed_urls)
             seen_urls.update(known_context_urls)
@@ -838,9 +838,9 @@ if __name__ == "__main__":
             add_context_urls(arguments.server, arguments.access_token, context_urls, seen_urls)
 
 
-        if arguments.max_home_timeline_length > 0:
+        if arguments.home_timeline_length > 0:
             """Do the same with any toots on the key owner's home timeline """
-            timeline_toots = get_timeline(arguments.server, arguments.access_token, arguments.max_home_timeline_length)
+            timeline_toots = get_timeline(arguments.server, arguments.access_token, arguments.home_timeline_length)
             known_context_urls = get_all_known_context_urls(arguments.server, timeline_toots,parsed_urls)
             add_context_urls(arguments.server, arguments.access_token, known_context_urls, seen_urls)
 
@@ -867,13 +867,13 @@ if __name__ == "__main__":
 
         if arguments.max_followings > 0:
             log(f"Getting posts from last {arguments.max_followings} followings")
-            user_id = get_user_id(arguments.server, arguments.backfill_followings_for_user, arguments.access_token)
+            user_id = get_user_id(arguments.server, arguments.user, arguments.access_token)
             followings = get_new_followings(arguments.server, user_id, arguments.max_followings, all_known_users)
             add_user_posts(arguments.server, arguments.access_token, followings, known_followings, all_known_users, seen_urls)
         
         if arguments.max_followers > 0:
             log(f"Getting posts from last {arguments.max_followers} followers")
-            user_id = get_user_id(arguments.server, arguments.backfill_followings_for_user, arguments.access_token)
+            user_id = get_user_id(arguments.server, arguments.user, arguments.access_token)
             followers = get_new_followers(arguments.server, user_id, arguments.max_followers, all_known_users)
             add_user_posts(arguments.server, arguments.access_token, followers, recently_checked_users, all_known_users, seen_urls)
 
