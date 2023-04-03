@@ -26,102 +26,12 @@ argparser.add_argument('--max-bookmarks', required = False, type=int, default=0,
 argparser.add_argument('--from-notifications', required = False, type=int, default=0, help="Backfill accounts of anyone appearing in your notifications, during the last hours")
 argparser.add_argument('--remember-users-for-hours', required=False, type=int, default=24*7, help="How long to remember users that you aren't following for, before trying to backfill them again.")
 argparser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
-argparser.add_argument('--backfill-with-context', required = False, type=bool, default=False, help="Backfill with context?")
+argparser.add_argument('--backfill-with-context', required = False, type=bool, default=True, help="If enabled, we'll fetch remote replies when backfilling profiles.")
+argparser.add_argument('--backfill-mentioned-users', required = False, type=bool, default=True, help="If enabled, we'll backfill any mentioned users when fetching remote replies to timeline posts.")
 argparser.add_argument('--lock-hours', required = False, type=int, default=24, help="The lock timeout in hours.")
 argparser.add_argument('--on-done', required = False, default=None, help="Provide a url that will be pinged when processing has completed. You can use this for 'dead man switch' monitoring of your task")
 argparser.add_argument('--on-start', required = False, default=None, help="Provide a url that will be pinged when processing is starting. You can use this for 'dead man switch' monitoring of your task")
 argparser.add_argument('--on-fail', required = False, default=None, help="Provide a url that will be pinged when processing has failed. You can use this for 'dead man switch' monitoring of your task")
-
-def pull_context(
-    server,
-    access_token,
-    seen_urls,
-    replied_toot_server_ids,
-    reply_interval_hours,
-    max_home_timeline_length,
-    max_followings,
-    backfill_followings_for_user,
-    known_followings,
-    max_followers,
-    max_follow_requests,
-    max_bookmarks,
-    recently_checked_users,
-    from_notifications
-):
-    
-    parsed_urls = {}
-
-    all_known_users = OrderedSet(list(known_followings) + list(recently_checked_users))
-
-    if reply_interval_hours > 0:
-        """pull the context toots of toots user replied to, from their
-        original server, and add them to the local server."""
-        user_ids = get_active_user_ids(server, access_token, reply_interval_hours)
-        reply_toots = get_all_reply_toots(
-            server, user_ids, access_token, seen_urls, reply_interval_hours
-        )
-        known_context_urls = get_all_known_context_urls(server, reply_toots,parsed_urls)
-        seen_urls.update(known_context_urls)
-        replied_toot_ids = get_all_replied_toot_server_ids(
-            server, reply_toots, replied_toot_server_ids, parsed_urls
-        )
-        context_urls = get_all_context_urls(server, replied_toot_ids)
-        add_context_urls(server, access_token, context_urls, seen_urls)
-
-
-    if max_home_timeline_length > 0:
-        """Do the same with any toots on the key owner's home timeline """
-        timeline_toots = get_timeline(server, access_token, max_home_timeline_length)
-        known_context_urls = get_all_known_context_urls(server, timeline_toots,parsed_urls)
-        add_context_urls(server, access_token, known_context_urls, seen_urls)
-
-        # Backfill any post authors, and any mentioned users
-        mentioned_users = []
-        for toot in timeline_toots:
-            these_users = []
-            toot_created_at = parser.parse(toot['created_at'])
-            cutoff = datetime.now(datetime.now().astimezone().tzinfo) - timedelta(minutes=60)
-            if(len(mentioned_users) < 10 or toot_created_at > cutoff):
-                these_users.append(toot['account'])
-                if(len(toot['mentions'])):
-                    these_users += toot['mentions']
-                if(toot['reblog'] != None):
-                    these_users.append(toot['reblog']['account'])
-                    if(len(toot['reblog']['mentions'])):
-                        these_users += toot['reblog']['mentions']
-            for user in these_users:
-                if user not in mentioned_users and user['acct'] not in all_known_users:
-                    mentioned_users.append(user)
-
-        add_user_posts(server, access_token, filter_known_users(mentioned_users, all_known_users), recently_checked_users, all_known_users, seen_urls)
-
-    if max_followings > 0:
-        log(f"Getting posts from last {max_followings} followings")
-        user_id = get_user_id(server, backfill_followings_for_user, access_token)
-        followings = get_new_followings(server, user_id, max_followings, all_known_users)
-        add_user_posts(server, access_token, followings, known_followings, all_known_users, seen_urls)
-    
-    if max_followers > 0:
-        log(f"Getting posts from last {max_followers} followers")
-        user_id = get_user_id(server, backfill_followings_for_user, access_token)
-        followers = get_new_followers(server, user_id, max_followers, all_known_users)
-        add_user_posts(server, access_token, followers, recently_checked_users, all_known_users, seen_urls)
-
-    if max_follow_requests > 0:
-        log(f"Getting posts from last {max_follow_requests} follow requests")
-        follow_requests = get_new_follow_requests(server, access_token, max_follow_requests, all_known_users)
-        add_user_posts(server, access_token, follow_requests, recently_checked_users, all_known_users, seen_urls)
-
-    if from_notifications > 0:
-        log(f"Getting notifications for last {from_notifications} hours")
-        notification_users = get_notification_users(server, access_token, all_known_users, from_notifications)
-        add_user_posts(server, access_token, notification_users, recently_checked_users, all_known_users, seen_urls)
-
-    if max_bookmarks > 0:
-        log(f"Pulling replies to the last {max_bookmarks} bookmarks")
-        bookmarks = get_bookmarks(server, access_token, max_bookmarks)
-        known_context_urls = get_all_known_context_urls(server, bookmarks,parsed_urls)
-        add_context_urls(server, access_token, known_context_urls, seen_urls)
 
 def get_notification_users(server, access_token, known_users, max_age):
     since = datetime.now(datetime.now().astimezone().tzinfo) - timedelta(hours=max_age)
@@ -881,61 +791,119 @@ if __name__ == "__main__":
         RECENTLY_CHECKED_USERS_FILE = "artifacts/recently_checked_users"
 
 
-        SEEN_URLS = OrderedSet([])
+        seen_urls = OrderedSet([])
         if os.path.exists(SEEN_URLS_FILE):
             with open(SEEN_URLS_FILE, "r", encoding="utf-8") as f:
-                SEEN_URLS = OrderedSet(f.read().splitlines())
+                seen_urls = OrderedSet(f.read().splitlines())
 
-        REPLIED_TOOT_SERVER_IDS = {}
+        replied_toot_server_ids = {}
         if os.path.exists(REPLIED_TOOT_SERVER_IDS_FILE):
             with open(REPLIED_TOOT_SERVER_IDS_FILE, "r", encoding="utf-8") as f:
-                REPLIED_TOOT_SERVER_IDS = json.load(f)
+                replied_toot_server_ids = json.load(f)
 
-        KNOWN_FOLLOWINGS = OrderedSet([])
+        known_followings = OrderedSet([])
         if os.path.exists(KNOWN_FOLLOWINGS_FILE):
             with open(KNOWN_FOLLOWINGS_FILE, "r", encoding="utf-8") as f:
-                KNOWN_FOLLOWINGS = OrderedSet(f.read().splitlines())
+                known_followings = OrderedSet(f.read().splitlines())
 
-        RECENTLY_CHECKED_USERS = OrderedSet({})
+        recently_checked_users = OrderedSet({})
         if os.path.exists(RECENTLY_CHECKED_USERS_FILE):
             with open(RECENTLY_CHECKED_USERS_FILE, "r", encoding="utf-8") as f:
-                RECENTLY_CHECKED_USERS = OrderedSet(json.load(f))
+                recently_checked_users = OrderedSet(json.load(f))
 
         # Remove any users whose last check is too long in the past from the list
-        for user in list(RECENTLY_CHECKED_USERS):
-            lastCheck = RECENTLY_CHECKED_USERS.get(user)
+        for user in list(recently_checked_users):
+            lastCheck = recently_checked_users.get(user)
             userAge = datetime.now(lastCheck.tzinfo) - lastCheck
             if(userAge.total_seconds() > arguments.remember_users_for_hours * 60 * 60):
-                RECENTLY_CHECKED_USERS.pop(user)    
+                recently_checked_users.pop(user)    
 
-        pull_context(
-            arguments.server,
-            arguments.access_token,
-            SEEN_URLS,
-            REPLIED_TOOT_SERVER_IDS,
-            arguments.reply_interval_in_hours,
-            arguments.home_timeline_length,
-            arguments.max_followings,
-            arguments.user,
-            KNOWN_FOLLOWINGS,
-            arguments.max_followers,
-            arguments.max_follow_requests,
-            arguments.max_bookmarks,
-            RECENTLY_CHECKED_USERS,
-            arguments.from_notifications,
-        )        
+        parsed_urls = {}
+
+        all_known_users = OrderedSet(list(known_followings) + list(recently_checked_users))
+
+        if arguments.reply_interval_hours > 0:
+            """pull the context toots of toots user replied to, from their
+            original server, and add them to the local server."""
+            user_ids = get_active_user_ids(arguments.server, arguments.access_token, arguments.reply_interval_hours)
+            reply_toots = get_all_reply_toots(
+                arguments.server, user_ids, arguments.access_token, seen_urls, arguments.reply_interval_hours
+            )
+            known_context_urls = get_all_known_context_urls(arguments.server, reply_toots,parsed_urls)
+            seen_urls.update(known_context_urls)
+            replied_toot_ids = get_all_replied_toot_server_ids(
+                arguments.server, reply_toots, replied_toot_server_ids, parsed_urls
+            )
+            context_urls = get_all_context_urls(arguments.server, replied_toot_ids)
+            add_context_urls(arguments.server, arguments.access_token, context_urls, seen_urls)
+
+
+        if arguments.max_home_timeline_length > 0:
+            """Do the same with any toots on the key owner's home timeline """
+            timeline_toots = get_timeline(arguments.server, arguments.access_token, arguments.max_home_timeline_length)
+            known_context_urls = get_all_known_context_urls(arguments.server, timeline_toots,parsed_urls)
+            add_context_urls(arguments.server, arguments.access_token, known_context_urls, seen_urls)
+
+            # Backfill any post authors, and any mentioned users
+            if arguments.backfill_mentioned_users:
+                mentioned_users = []
+                cut_off = datetime.now(datetime.now().astimezone().tzinfo) - timedelta(minutes=60)
+                for toot in timeline_toots:
+                    these_users = []
+                    toot_created_at = parser.parse(toot['created_at'])
+                    if len(mentioned_users) < 10 or (toot_created_at > cut_off and len(mentioned_users) < 30):
+                        these_users.append(toot['account'])
+                        if(len(toot['mentions'])):
+                            these_users += toot['mentions']
+                        if(toot['reblog'] != None):
+                            these_users.append(toot['reblog']['account'])
+                            if(len(toot['reblog']['mentions'])):
+                                these_users += toot['reblog']['mentions']
+                    for user in these_users:
+                        if user not in mentioned_users and user['acct'] not in all_known_users:
+                            mentioned_users.append(user)
+
+                add_user_posts(arguments.server, arguments.access_token, filter_known_users(mentioned_users, all_known_users), recently_checked_users, all_known_users, seen_urls)
+
+        if arguments.max_followings > 0:
+            log(f"Getting posts from last {arguments.max_followings} followings")
+            user_id = get_user_id(arguments.server, arguments.backfill_followings_for_user, arguments.access_token)
+            followings = get_new_followings(arguments.server, user_id, arguments.max_followings, all_known_users)
+            add_user_posts(arguments.server, arguments.access_token, followings, known_followings, all_known_users, seen_urls)
+        
+        if arguments.max_followers > 0:
+            log(f"Getting posts from last {arguments.max_followers} followers")
+            user_id = get_user_id(arguments.server, arguments.backfill_followings_for_user, arguments.access_token)
+            followers = get_new_followers(arguments.server, user_id, arguments.max_followers, all_known_users)
+            add_user_posts(arguments.server, arguments.access_token, followers, recently_checked_users, all_known_users, seen_urls)
+
+        if arguments.max_follow_requests > 0:
+            log(f"Getting posts from last {arguments.max_follow_requests} follow requests")
+            follow_requests = get_new_follow_requests(arguments.server, arguments.access_token, arguments.max_follow_requests, all_known_users)
+            add_user_posts(arguments.server, arguments.access_token, follow_requests, recently_checked_users, all_known_users, seen_urls)
+
+        if arguments.from_notifications > 0:
+            log(f"Getting notifications for last {arguments.from_notifications} hours")
+            notification_users = get_notification_users(arguments.server, arguments.access_token, all_known_users, arguments.from_notifications)
+            add_user_posts(arguments.server, arguments.access_token, notification_users, recently_checked_users, all_known_users, seen_urls)
+
+        if arguments.max_bookmarks > 0:
+            log(f"Pulling replies to the last {arguments.max_bookmarks} bookmarks")
+            bookmarks = get_bookmarks(arguments.server, arguments.access_token, arguments.max_bookmarks)
+            known_context_urls = get_all_known_context_urls(arguments.server, bookmarks,parsed_urls)
+            add_context_urls(arguments.server, arguments.access_token, known_context_urls, seen_urls)
 
         with open(KNOWN_FOLLOWINGS_FILE, "w", encoding="utf-8") as f:
-            f.write("\n".join(list(KNOWN_FOLLOWINGS)[-10000:]))
+            f.write("\n".join(list(known_followings)[-10000:]))
 
         with open(SEEN_URLS_FILE, "w", encoding="utf-8") as f:
-            f.write("\n".join(list(SEEN_URLS)[-10000:]))
+            f.write("\n".join(list(seen_urls)[-10000:]))
 
         with open(REPLIED_TOOT_SERVER_IDS_FILE, "w", encoding="utf-8") as f:
-            json.dump(dict(list(REPLIED_TOOT_SERVER_IDS.items())[-10000:]), f)
+            json.dump(dict(list(replied_toot_server_ids.items())[-10000:]), f)
 
         with open(RECENTLY_CHECKED_USERS_FILE, "w", encoding="utf-8") as f:
-            RECENTLY_CHECKED_USERS.toJSON()
+            recently_checked_users.toJSON()
 
         os.remove(LOCK_FILE)
 
