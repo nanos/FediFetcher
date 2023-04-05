@@ -753,7 +753,7 @@ if __name__ == "__main__":
             log(f"Error getting callback url: {ex}")
 
     if arguments.lock_file is None:
-        arguments.lock_file = os.path.join(arguments.state, 'lock.lock')
+        arguments.lock_file = os.path.join(arguments.state_dir, 'lock.lock')
     LOCK_FILE = arguments.lock_file
 
     if( os.path.exists(LOCK_FILE)):
@@ -789,10 +789,10 @@ if __name__ == "__main__":
 
     try:
 
-        SEEN_URLS_FILE = os.path.join(arguments.state, "seen_urls")
-        REPLIED_TOOT_SERVER_IDS_FILE = os.path.join(arguments.state, "replied_toot_server_ids")
-        KNOWN_FOLLOWINGS_FILE = os.path.join(arguments.state, "known_followings")
-        RECENTLY_CHECKED_USERS_FILE = os.path.join(arguments.state, "recently_checked_users")
+        SEEN_URLS_FILE = os.path.join(arguments.state_dir, "seen_urls")
+        REPLIED_TOOT_SERVER_IDS_FILE = os.path.join(arguments.state_dir, "replied_toot_server_ids")
+        KNOWN_FOLLOWINGS_FILE = os.path.join(arguments.state_dir, "known_followings")
+        RECENTLY_CHECKED_USERS_FILE = os.path.join(arguments.state_dir, "recently_checked_users")
 
 
         seen_urls = OrderedSet([])
