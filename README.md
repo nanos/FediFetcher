@@ -71,8 +71,8 @@ If you are running FediFetcher locally, my recommendation is to run it manually 
 
 FediFetcher is also available in a pre-packaged container, [FediFetcher](https://github.com/nanos/FediFetcher/pkgs/container/fedifetcher) - Thank you [@nikdoof](https://github.com/nikdoof).
 
-1. Pull the container from `ghcr.io`, using Docker or your container tool of choice: `docker pull ghcr.io/nanos/FediFetcher:latest`
-2. Run the container, passing the command line arguments like running the script directly: `docker run -it ghcr.io/nanos/FediFetcher:latest --access-token=<TOKEN> --server=<SERVER>`
+1. Pull the container from `ghcr.io`, using Docker or your container tool of choice: `docker pull ghcr.io/nanos/fedifetcher:latest`
+2. Run the container, passing the command line arguments like running the script directly: `docker run -it ghcr.io/nanos/fedifetcher:latest --access-token=<TOKEN> --server=<SERVER>`
 
 The same rules for running this as a cron job apply to running the container: don't overlap any executions.
 
