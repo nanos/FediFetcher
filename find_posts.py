@@ -29,6 +29,8 @@ argparser.add_argument('--http-timeout', required = False, type=int, default=5, 
 argparser.add_argument('--backfill-with-context', required = False, type=bool, default=True, help="If enabled, we'll fetch remote replies when backfilling profiles.")
 argparser.add_argument('--backfill-mentioned-users', required = False, type=bool, default=True, help="If enabled, we'll backfill any mentioned users when fetching remote replies to timeline posts.")
 argparser.add_argument('--lock-hours', required = False, type=int, default=24, help="The lock timeout in hours.")
+argparser.add_argument('--lock-file', required = False, default=None, help="Location of the lock file")
+argparser.add_argument('--state-dir', required = False, default="artifacts", help="Directory to store persistent files and possibly lock file")
 argparser.add_argument('--on-done', required = False, default=None, help="Provide a url that will be pinged when processing has completed. You can use this for 'dead man switch' monitoring of your task")
 argparser.add_argument('--on-start', required = False, default=None, help="Provide a url that will be pinged when processing is starting. You can use this for 'dead man switch' monitoring of your task")
 argparser.add_argument('--on-fail', required = False, default=None, help="Provide a url that will be pinged when processing has failed. You can use this for 'dead man switch' monitoring of your task")
@@ -750,7 +752,9 @@ if __name__ == "__main__":
         except Exception as ex:
             log(f"Error getting callback url: {ex}")
 
-    LOCK_FILE = 'artifacts/lock.lock'
+    if arguments.lock_file is None:
+        arguments.lock_file = os.path.join(arguments.state, 'lock.lock')
+    LOCK_FILE = arguments.lock_file
 
     if( os.path.exists(LOCK_FILE)):
         log(f"Lock file exists at {LOCK_FILE}")
@@ -785,10 +789,10 @@ if __name__ == "__main__":
 
     try:
 
-        SEEN_URLS_FILE = "artifacts/seen_urls"
-        REPLIED_TOOT_SERVER_IDS_FILE = "artifacts/replied_toot_server_ids"
-        KNOWN_FOLLOWINGS_FILE = "artifacts/known_followings"
-        RECENTLY_CHECKED_USERS_FILE = "artifacts/recently_checked_users"
+        SEEN_URLS_FILE = os.path.join(arguments.state, "seen_urls")
+        REPLIED_TOOT_SERVER_IDS_FILE = os.path.join(arguments.state, "replied_toot_server_ids")
+        KNOWN_FOLLOWINGS_FILE = os.path.join(arguments.state, "known_followings")
+        RECENTLY_CHECKED_USERS_FILE = os.path.join(arguments.state, "recently_checked_users")
 
 
         seen_urls = OrderedSet([])
