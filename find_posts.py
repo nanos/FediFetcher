@@ -844,9 +844,9 @@ if __name__ == "__main__":
 
         if arguments.home_timeline_length > 0:
             """Do the same with any toots on the key owner's home timeline """
-            # timeline_toots = get_timeline(arguments.server, arguments.access_token, arguments.home_timeline_length)
-            # known_context_urls = get_all_known_context_urls(arguments.server, timeline_toots,parsed_urls)
-            # add_context_urls(arguments.server, arguments.access_token, known_context_urls, seen_urls)
+            timeline_toots = get_timeline(arguments.server, arguments.access_token, arguments.home_timeline_length)
+            known_context_urls = get_all_known_context_urls(arguments.server, timeline_toots,parsed_urls)
+            add_context_urls(arguments.server, arguments.access_token, known_context_urls, seen_urls)
 
             # Backfill any post authors, and any mentioned users
             if arguments.backfill_mentioned_users > 0:
