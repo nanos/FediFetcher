@@ -26,8 +26,8 @@ argparser.add_argument('--max-bookmarks', required = False, type=int, default=0,
 argparser.add_argument('--from-notifications', required = False, type=int, default=0, help="Backfill accounts of anyone appearing in your notifications, during the last hours")
 argparser.add_argument('--remember-users-for-hours', required=False, type=int, default=24*7, help="How long to remember users that you aren't following for, before trying to backfill them again.")
 argparser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
-argparser.add_argument('--backfill-with-context', required = False, type=bool, default=True, help="If enabled, we'll fetch remote replies when backfilling profiles.")
-argparser.add_argument('--backfill-mentioned-users', required = False, type=bool, default=True, help="If enabled, we'll backfill any mentioned users when fetching remote replies to timeline posts.")
+argparser.add_argument('--backfill-with-context', required = False, type=int, default=1, help="If enabled, we'll fetch remote replies when backfilling profiles. Set to `0` to disable.")
+argparser.add_argument('--backfill-mentioned-users', required = False, type=int, default=1, help="If enabled, we'll backfill any mentioned users when fetching remote replies to timeline posts. Set to `0` to disable.")
 argparser.add_argument('--lock-hours', required = False, type=int, default=24, help="The lock timeout in hours.")
 argparser.add_argument('--lock-file', required = False, default=None, help="Location of the lock file")
 argparser.add_argument('--state-dir', required = False, default="artifacts", help="Directory to store persistent files and possibly lock file")
@@ -82,7 +82,7 @@ def add_post_with_context(post, server, access_token, seen_urls):
     added = add_context_url(post['url'], server, access_token)
     if added is True:
         seen_urls.add(post['url'])
-        if (post['replies_count'] or post['in_reply_to_id']) and arguments.backfill_with_context:
+        if (post['replies_count'] or post['in_reply_to_id']) and arguments.backfill_with_context > 0:
             parsed_urls = {}
             parsed = parse_url(post['url'], parsed_urls)
             if parsed == None:
@@ -844,12 +844,12 @@ if __name__ == "__main__":
 
         if arguments.home_timeline_length > 0:
             """Do the same with any toots on the key owner's home timeline """
-            timeline_toots = get_timeline(arguments.server, arguments.access_token, arguments.home_timeline_length)
-            known_context_urls = get_all_known_context_urls(arguments.server, timeline_toots,parsed_urls)
-            add_context_urls(arguments.server, arguments.access_token, known_context_urls, seen_urls)
+            # timeline_toots = get_timeline(arguments.server, arguments.access_token, arguments.home_timeline_length)
+            # known_context_urls = get_all_known_context_urls(arguments.server, timeline_toots,parsed_urls)
+            # add_context_urls(arguments.server, arguments.access_token, known_context_urls, seen_urls)
 
             # Backfill any post authors, and any mentioned users
-            if arguments.backfill_mentioned_users:
+            if arguments.backfill_mentioned_users > 0:
                 mentioned_users = []
                 cut_off = datetime.now(datetime.now().astimezone().tzinfo) - timedelta(minutes=60)
                 for toot in timeline_toots:
