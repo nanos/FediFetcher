@@ -20,6 +20,12 @@ FediFetcher will store posts it has already pulled in, as well as profiles it ha
 
 For detailed information on the how and why, please read the [FediFetcher for Mastodon page](https://blog.thms.uk/fedifetcher?utm_source=github).
 
+## Supported servers
+
+FediFetcher makes use of the Mastodon API. It'll run against any instance implementing this API, and whilst it was built for Mastodon, it's been [confirmed working against Pleroma](https://fed.xnor.in/objects/6bd47928-704a-4cb8-82d6-87471d1b632f) as well.
+
+FediFetcher will pull in posts from any server that implements the Mastodon API, including Mastodon, Pleroma, Akkoma, Pixelfed, and probably others.
+
 ## Setup
 
 You can run FediFetcher either as a GitHub Action, as a scheduled cron job on your local machine/server, or from a pre-packed container.
