@@ -71,7 +71,7 @@ When using a cronjob, we are using file based locking to avoid multiple overlapp
 
 If you are running FediFetcher locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
 
-If you wish to run FediFetcher against for multiple users on your instance, you can supply the `--access-token` argument multiple times, with different access tokens for different users. That will allow you to fetch replies and/or backfill profiles for multiple users on your account. Have a look at the [sample script provided](./examples/FediFetcher-multiple-users.sh).
+If you wish to [run FediFetcher for multiple users on your instance](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher?utm_source=github), you can supply the `--access-token` argument multiple times, with different access tokens for different users. That will allow you to fetch replies and/or backfill profiles for multiple users on your account. Have a look at the [sample script provided](./examples/FediFetcher-multiple-users.sh).
 
 *Note:* if you wish to run FediFetcher using Windows Task Scheduler, you can rename the script to the `.pyw` extension instead of `.py`, and it will run silently, without opening a console window.
 
@@ -108,7 +108,7 @@ Please find the list of all configuration options, including descriptions, below
 
 | Environment Variable Name | Command line flag | Required? | Notes |
 |:---------------------------------------------------|:----------------------------------------------------|-----------|:------|
-| -- | `--access-token` | Yes | The access token. If using GitHub action, this needs to be provided as a Secret called  `ACCESS_TOKEN`. If running as a cron job or a container, you can supply this argument multiple times, to fetch posts for multiple users on your instance. |
+| -- | `--access-token` | Yes | The access token. If using GitHub action, this needs to be provided as a Secret called  `ACCESS_TOKEN`. If running as a cron job or a container, you can supply this argument multiple times, to [fetch posts for multiple users](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher) on your instance. |
 |`MASTODON_SERVER`|`--server`|Yes|The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`. |
 | `HOME_TIMELINE_LENGTH` | `--home-timeline-length` | No | Provide to fetch remote replies to posts in the API-Key owner's home timeline. Determines how many posts we'll fetch replies for. Recommended value: `200`.
 | `REPLY_INTERVAL_IN_HOURS` | `--reply-interval-in-hours` | No | Provide to fetch remote replies to posts that have received replies from users on your own instance. Determines how far back in time we'll go to find posts that have received replies. Recommend value: `0` (disabled). Requires an access token with `admin:read:accounts`.
