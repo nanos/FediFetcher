@@ -2,21 +2,21 @@
 
 This GitHub repository provides a simple script that can pull missing posts into Mastodon using the Mastodon API. FediFetcher has no further dependencies, and can be run as either a GitHub Action, as a scheduled cron job, or a pre-packaged container. Here is what FediFetcher can do:
 
-1. It can pull missing remote replies to posts that are already on your server into your server. It can
+1. It can pull missing remote replies to posts that are already on your server into your server. Specifically, it can
    1. fetch missing replies to posts that users on your instance have already replied to,
    2. fetch missing replies to the most recent posts in your home timeline,
    3. fetch missing replies to your bookmarks.
 2. It can also backfill profiles on your instance. In particular it can
-   1. fetch missing recent posts from users that have recently appeared in your notifications,
-   1. fetch missing recent posts from users that you have recently followed,
-   2. fetch missing recent posts form users that have recently followed you,
-   3. fetch missing recent posts form users that have recently sent you a follow request.
+   1. fetch missing posts from users that have recently appeared in your notifications,
+   1. fetch missing posts from users that you have recently followed,
+   2. fetch missing posts form users that have recently followed you,
+   3. fetch missing posts form users that have recently sent you a follow request.
 
 Each part of this script is fully configurable, and you can completely disable parts that you are not interested in.
 
-FediFetcher will store posts it has already pulled in, as well as profiles it has already backfilled on disk, to prevent re-fetching the same info in subsequent executions.
+FediFetcher will store posts and profiles it has already pulled in on disk, to prevent re-fetching the same info in subsequent executions.
 
-**Be aware, that this script may run for a *very* long time.** This is particularly true, the first time this script runs, and/or if you enable all parts of this script. You should ensure that you take steps to prevent multiple overlapping executions of this script, as that will lead to unpleasant results.
+**Be aware, that this script may run for a *very* long time.** This is particularly true, the first time this script runs, and/or if you enable all parts of this script. You should ensure that you take steps to prevent multiple overlapping executions of this script, as that will lead to unpleasant results. There are detailed instructions for this below.
 
 For detailed information on the how and why, please read the [FediFetcher for Mastodon page](https://blog.thms.uk/fedifetcher?utm_source=github).
 
@@ -24,20 +24,23 @@ For detailed information on the how and why, please read the [FediFetcher for Ma
 
 FediFetcher makes use of the Mastodon API. It'll run against any instance implementing this API, and whilst it was built for Mastodon, it's been [confirmed working against Pleroma](https://fed.xnor.in/objects/6bd47928-704a-4cb8-82d6-87471d1b632f) as well.
 
-FediFetcher will pull in posts from any server that implements the Mastodon API, including Mastodon, Pleroma, Akkoma, Pixelfed, and probably others.
+FediFetcher will pull in posts and profiles from any server that implements the Mastodon API, including Mastodon, Pleroma, Akkoma, Pixelfed, and probably others.
 
 ## Setup
 
 You can run FediFetcher either as a GitHub Action, as a scheduled cron job on your local machine/server, or from a pre-packed container.
+
 ### 1) Get the required access token:
 
 Regardless of how you want to run FediFetcher, you must first get an access token:
 
 1. In Mastodon go to Preferences > Development > New Application
-   1. give it a nice name
+   1. Give it a nice name
    2. Enable the required scopes for your options. You could tick `read` and `admin:read:accounts`, or see below for a list of which scopes are required for which options.
    3. Save
    4. Copy the value of `Your access token`
+
+If you are not a server admin, you do not have access to Preferences > Development. You can use [GetAuth for Mastodon](https://getauth.thms.uk) to generate an Access Token instead.
 
 ### 2.1) Configure and run the GitHub Action
 
@@ -70,8 +73,6 @@ An [example script](./examples/FediFetcher.sh) can be found in the `examples` fo
 When using a cronjob, we are using file based locking to avoid multiple overlapping executions of the script. The timeout period for the lock can be configured using `--lock-hours`.
 
 If you are running FediFetcher locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
-
-If you wish to [run FediFetcher for multiple users on your instance](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher?utm_source=github), you can supply the `--access-token` argument multiple times, with different access tokens for different users. That will allow you to fetch replies and/or backfill profiles for multiple users on your account. Have a look at the [sample script provided](./examples/FediFetcher-multiple-users.sh).
 
 *Note:* if you wish to run FediFetcher using Windows Task Scheduler, you can rename the script to the `.pyw` extension instead of `.py`, and it will run silently, without opening a console window.
 
@@ -127,6 +128,12 @@ Please find the list of all configuration options, including descriptions, below
 | `ON_START` | `--on-start` | No | Optionally provide a callback URL that will be pinged when processing is starting. A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
 | `ON_DONE` | `--on-done` | No | Optionally provide a callback URL that will be called when processing is finished.  A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
 | `ON_FAIL` | `--on-fail` | No | Optionally provide a callback URL that will be called when processing has failed.  A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
+
+#### Multi User support
+
+If you wish to [run FediFetcher for multiple users on your instance](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher?utm_source=github), you can supply the `--access-token` argument multiple times, with different access tokens for different users. That will allow you to fetch replies and/or backfill profiles for multiple users on your account. Have a look at the [sample script provided](./examples/FediFetcher-multiple-users.sh).
+
+This is only supported when running FediFetcher as cron job, or container. Multi-user support is not available when running FediFetcher as GitHub Action.
 
 #### Required Access Token Scopes
 
