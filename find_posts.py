@@ -23,6 +23,7 @@ argparser.add_argument('--max-followings', required = False, type=int, default=0
 argparser.add_argument('--max-followers', required = False, type=int, default=0, help="Backfill posts for new accounts following --user. We'll backfill at most this many followers' posts")
 argparser.add_argument('--max-follow-requests', required = False, type=int, default=0, help="Backfill posts of the API key owners pending follow requests. We'll backfill at most this many requester's posts")
 argparser.add_argument('--max-bookmarks', required = False, type=int, default=0, help="Fetch remote replies to the API key owners Bookmarks. We'll fetch replies to at most this many bookmarks")
+argparser.add_argument('--max-favourites', required = False, type=int, default=0, help="Fetch remote replies to the API key owners Favourites. We'll fetch replies to at most this many favourites")
 argparser.add_argument('--from-notifications', required = False, type=int, default=0, help="Backfill accounts of anyone appearing in your notifications, during the last hours")
 argparser.add_argument('--remember-users-for-hours', required=False, type=int, default=24*7, help="How long to remember users that you aren't following for, before trying to backfill them again.")
 argparser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
@@ -54,6 +55,11 @@ def get_notification_users(server, access_token, known_users, max_age):
 
 def get_bookmarks(server, access_token, max):
     return get_paginated_mastodon(f"https://{server}/api/v1/bookmarks", max, {
+        "Authorization": f"Bearer {access_token}",
+    })
+
+def get_favourites(server, access_token, max):
+    return get_paginated_mastodon(f"https://{server}/api/v1/favourites", max, {
         "Authorization": f"Bearer {access_token}",
     })
 
@@ -897,6 +903,12 @@ if __name__ == "__main__":
                 log(f"Pulling replies to the last {arguments.max_bookmarks} bookmarks")
                 bookmarks = get_bookmarks(arguments.server, token, arguments.max_bookmarks)
                 known_context_urls = get_all_known_context_urls(arguments.server, bookmarks,parsed_urls)
+                add_context_urls(arguments.server, token, known_context_urls, seen_urls)
+
+            if arguments.max_favourites > 0:
+                log(f"Pulling replies to the last {arguments.max_favourites} favourites")
+                favourites = get_favourites(arguments.server, token, arguments.max_favourites)
+                known_context_urls = get_all_known_context_urls(arguments.server, favourites,parsed_urls)
                 add_context_urls(arguments.server, token, known_context_urls, seen_urls)
 
         with open(KNOWN_FOLLOWINGS_FILE, "w", encoding="utf-8") as f:
