@@ -6,6 +6,7 @@ This GitHub repository provides a simple script that can pull missing posts into
    1. fetch missing replies to posts that users on your instance have already replied to,
    2. fetch missing replies to the most recent posts in your home timeline,
    3. fetch missing replies to your bookmarks.
+   4. fetch missing replies to your favourites.
 2. It can also backfill profiles on your instance. In particular it can
    1. fetch missing posts from users that have recently appeared in your notifications,
    1. fetch missing posts from users that you have recently followed,
