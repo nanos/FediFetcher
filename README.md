@@ -114,6 +114,7 @@ Please find the list of all configuration options, including descriptions, below
 | `HOME_TIMELINE_LENGTH` | `--home-timeline-length` | No | Provide to fetch remote replies to posts in the API-Key owner's home timeline. Determines how many posts we'll fetch replies for. Recommended value: `200`.
 | `REPLY_INTERVAL_IN_HOURS` | `--reply-interval-in-hours` | No | Provide to fetch remote replies to posts that have received replies from users on your own instance. Determines how far back in time we'll go to find posts that have received replies. Recommend value: `0` (disabled). Requires an access token with `admin:read:accounts`.
 | `MAX_BOOKMARKS` | `--max-bookmarks` | No | Provide to fetch remote replies to any posts you have bookmarked. Determines how many of your bookmarks you want to get replies to. Recommended value: `80`. Requires an access token with `read:bookmarks` scope.
+| `MAX_FAVOURITES` | `--max-favourites` | No | Provide to fetch remote replies to any posts you have favourited. Determines how many of your favourites you want to get replies to. Recommended value: `40`. Requires an access token with `read:favourites` scope.
 | `MAX_FOLLOWINGS` | `--max-followings` | No | Provide to backfill profiles for your most recent followings. Determines how many of your last followings you want to backfill. Recommended value: `80`.
 | `MAX_FOLLOWERS` | `--max-followers` | No | Provide to backfill profiles for your most recent followers. Determines how many of your last followers you want to backfill. Recommended value: `80`.
 | `MAX_FOLLOW_REQUESTS` | `--max-follow-requests` | No | Provide to backfill profiles for the API key owner's most recent pending follow requests. Determines how many of your last follow requests you want to backfill. Recommended value: `80`.
@@ -147,6 +148,8 @@ This is only supported when running FediFetcher as cron job, or container. Multi
    - `read:follows`
  - If you are supplying `MAX_BOOKMARKS` / `--max-bookmarks` you must additionally enable this scope:
    - `read:bookmarks`
+ - If you are supplying `MAX_FAVOURITES` / `--max-favourites` you must additionally enable this scope:
+   - `read:favourites`
  - If you are supplying `FROM_NOTIFICATIONS` / `--from-notifications` you must additionally enable this scope:
    - `read:notifications`
 
