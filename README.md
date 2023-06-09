@@ -75,6 +75,20 @@ When using a cronjob, we are using file based locking to avoid multiple overlapp
 
 If you are running FediFetcher locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
 
+When running FediFetcher locally, it may be advantageous to supply a json file of configuration options, instead of supplying a long list of command line flags. To do so, create a json file with your configuration options, e.g.
+
+```json
+{
+  "server": "mstdn.thms.uk",
+  "access-token": "{token}",
+  "home-timeline-length": 200,
+  "max-followings": 80,
+  "from-notifications": 1
+}
+```
+
+and then run your script like so: `python find_posts.py --config=path/to/json`.
+
 *Note:* if you wish to run FediFetcher using Windows Task Scheduler, you can rename the script to the `.pyw` extension instead of `.py`, and it will run silently, without opening a console window.
 
 ### 2.3) Run FediFetcher from a container
@@ -110,6 +124,7 @@ Please find the list of all configuration options, including descriptions, below
 
 | Environment Variable Name | Command line flag | Required? | Notes |
 |:---------------------------------------------------|:----------------------------------------------------|-----------|:------|
+| -- | `--config` | No | You can use this to point to a JSON file containing your configuration options, instead of supplying configuration options as command line flags.
 | -- | `--access-token` | Yes | The access token. If using GitHub action, this needs to be provided as a Secret called  `ACCESS_TOKEN`. If running as a cron job or a container, you can supply this argument multiple times, to [fetch posts for multiple users](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher) on your instance. |
 |`MASTODON_SERVER`|`--server`|Yes|The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`. |
 | `HOME_TIMELINE_LENGTH` | `--home-timeline-length` | No | Provide to fetch remote replies to posts in the API-Key owner's home timeline. Determines how many posts we'll fetch replies for. Recommended value: `200`.

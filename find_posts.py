@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from datetime import datetime, timedelta
+import string
 from dateutil import parser
 import itertools
 import json
@@ -14,8 +15,9 @@ import uuid
 
 argparser=argparse.ArgumentParser()
 
-argparser.add_argument('--server', required=True, help="Required: The name of your server (e.g. `mstdn.thms.uk`)")
-argparser.add_argument('--access-token', action="append", required=True, help="Required: The access token can be generated at https://<server>/settings/applications, and must have read:search, read:statuses and admin:read:accounts scopes. You can supply this multiple times, if you want tun run it for multiple users.")
+argparser.add_argument('-c','--config', required=False, type=str, help='Optionally provide a path to a JSON file containing configuration options. If not provided, options must be supplied using command line flags.')
+argparser.add_argument('--server', required=False, help="Required: The name of your server (e.g. `mstdn.thms.uk`)")
+argparser.add_argument('--access-token', action="append", required=False, help="Required: The access token can be generated at https://<server>/settings/applications, and must have read:search, read:statuses and admin:read:accounts scopes. You can supply this multiple times, if you want tun run it for multiple users.")
 argparser.add_argument('--reply-interval-in-hours', required = False, type=int, default=0, help="Fetch remote replies to posts that have received replies from users on your own instance in this period")
 argparser.add_argument('--home-timeline-length', required = False, type=int, default=0, help="Look for replies to posts in the API-Key owner's home timeline, up to this many posts")
 argparser.add_argument('--user', required = False, default='', help="Use together with --max-followings or --max-followers to tell us which user's followings/followers we should backfill")
@@ -749,6 +751,23 @@ if __name__ == "__main__":
     log(f"Starting FediFetcher")
 
     arguments = argparser.parse_args()
+
+    if(arguments.config != None):
+        if os.path.exists(arguments.config):
+            with open(arguments.config, "r", encoding="utf-8") as f:
+                config = json.load(f)
+
+            for key in config:
+                setattr(arguments, key.lower().replace('-','_'), config[key])
+
+        else:
+            log(f"Config file {arguments.config} doesn't exist")
+            sys.exit(1)
+
+    if(arguments.server == None or arguments.access_token == None):
+        log("You must supply at least a server name and an access token")
+        sys.exit(1)
+        
 
     runId = uuid.uuid4()
 
