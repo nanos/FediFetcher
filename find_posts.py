@@ -851,6 +851,9 @@ if __name__ == "__main__":
 
         all_known_users = OrderedSet(list(known_followings) + list(recently_checked_users))
 
+        if(isinstance(arguments.access_token, str)):
+            setattr(arguments, 'access_token', [arguments.access_token])
+
         for token in arguments.access_token:
 
             if arguments.reply_interval_in_hours > 0:
