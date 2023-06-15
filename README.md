@@ -52,11 +52,7 @@ To run FediFetcher as a GitHub Action:
    1.  Go to Settings > Secrets and Variables > Actions
    2.  Click New Repository Secret
    3.  Supply the Name `ACCESS_TOKEN` and provide the Token generated above as Secret
-3. Provide the required environment variables, to configure your Action:
-   1. Go to Settings > Environments
-   2. Click New Environment
-   3. Provide the name `Mastodon`
-   4. Add environment variables to configure your action as described below.
+3. Create a file called `config.json` with your [configuration options](#configuration-options) in the repository root. **Do NOT include the Access Token in your `config.json`!**
 4. Finally go to the Actions tab and enable the action. The action should now automatically run approximately once every 10 min. 
 
 Keep in mind that [the schedule event can be delayed during periods of high loads of GitHub Actions workflow runs](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule).
@@ -67,29 +63,18 @@ If you want to, you can of course also run FediFetcher locally as a cron job:
 
 1. To get started, clone this repository.
 2. Install requirements: `pip install -r requirements.txt`
-3. Then simply run this script like so: `python find_posts.py --access-token=<TOKEN> --server=<SERVER>` etc.  (Read below, or run `python find_posts.py -h` to get a list of all options.)
+3. Create a `json` file with [your configuration options](#configuration-options). You may wish to store this in the `./artifacts` directory, as that directory is `.gitignore`d
+4. Then simply run this script like so: `python find_posts.py -c=./artifacts/config.json`.  (Read below to get a list of all options.)
  
-An [example script](./examples/FediFetcher.sh) can be found in the `examples` folder.
+If desired, all configuration options can be provided as command line flags, instead of through a JSON file. An [example script](./examples/FediFetcher.sh) can be found in the `examples` folder.
 
-When using a cronjob, we are using file based locking to avoid multiple overlapping executions of the script. The timeout period for the lock can be configured using `--lock-hours`.
+When using a cronjob, we are using file based locking to avoid multiple overlapping executions of the script. The timeout period for the lock can be configured using `lock-hours`.
 
 If you are running FediFetcher locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
 
-When running FediFetcher locally, it may be advantageous to supply a json file of configuration options, instead of supplying a long list of command line flags. To do so, create a json file with your configuration options, e.g.
-
-```json
-{
-  "server": "mstdn.thms.uk",
-  "access-token": "{token}",
-  "home-timeline-length": 200,
-  "max-followings": 80,
-  "from-notifications": 1
-}
-```
-
-and then run your script like so: `python find_posts.py --config=path/to/json`.
-
-*Note:* if you wish to run FediFetcher using Windows Task Scheduler, you can rename the script to the `.pyw` extension instead of `.py`, and it will run silently, without opening a console window.
+> **Note**
+> 
+> If you wish to run FediFetcher using Windows Task Scheduler, you can rename the script to the `.pyw` extension instead of `.py`, and it will run silently, without opening a console window.
 
 ### 2.3) Run FediFetcher from a container
 
@@ -106,49 +91,54 @@ An [example Kubernetes CronJob](./examples/k8s-cronjob.yaml) for running the con
 
 ### Configuration options
 
-FediFetcher has quite a few configuration options, so here is my quick configuration advice, that should probably work for most people (use the *Environment Variable Name* if you are running FediFetcher has a GitHub Action, otherwise use the *Command line flag*):
+FediFetcher has quite a few configuration options, so here is my quick configuration advice, that should probably work for most people:
 
-| Environment Variable Name | Command line flag | Recommended Value |
-|:-------------------------|:-------------------|:-----------|
-| -- | `--access-token` | (Your access token) |
-| `MASTODON_SERVER`|`--server` | (your Mastodon server name) |
-| `HOME_TIMELINE_LENGTH` | `--home-timeline-length` | `200` |
-| `MAX_FOLLOWINGS` | `--max-followings` | `80` |
-| `FROM_NOTIFICATIONS` | `--from-notifications` | `1` |
+```json
+{
+  "access-token": "Your access token",
+  "server": "your.mastodon.server",
+  "home-timeline-length": 200,
+  "max-followings": 80,
+  "from-notifications": 1
+}
+```
 
 If you configure FediFetcher this way, it'll fetch missing remote replies to the last 200 posts in your home timeline. It'll additionally backfill profiles of the last 80 people you followed, and of every account who appeared in your notifications during the past hour.
+
+> **Warning**
+> 
+> **Do NOT** include your `access-token` in the `config.json` when running FediFetcher as GitHub Action. When running FediFetcher as GitHub Action **ALWAYS** [set the Access Token as an Action Secret](#21-configure-and-run-the-github-action).
 
 #### Advanced Options
 
 Please find the list of all configuration options, including descriptions, below:
 
-| Environment Variable Name | Command line flag | Required? | Notes |
-|:---------------------------------------------------|:----------------------------------------------------|-----------|:------|
-| -- | `--config` | No | You can use this to point to a JSON file containing your configuration options, instead of supplying configuration options as command line flags.
-| -- | `--access-token` | Yes | The access token. If using GitHub action, this needs to be provided as a Secret called  `ACCESS_TOKEN`. If running as a cron job or a container, you can supply this argument multiple times, to [fetch posts for multiple users](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher) on your instance. |
-|`MASTODON_SERVER`|`--server`|Yes|The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`. |
-| `HOME_TIMELINE_LENGTH` | `--home-timeline-length` | No | Provide to fetch remote replies to posts in the API-Key owner's home timeline. Determines how many posts we'll fetch replies for. Recommended value: `200`.
-| `REPLY_INTERVAL_IN_HOURS` | `--reply-interval-in-hours` | No | Provide to fetch remote replies to posts that have received replies from users on your own instance. Determines how far back in time we'll go to find posts that have received replies. Recommend value: `0` (disabled). Requires an access token with `admin:read:accounts`.
-| `MAX_BOOKMARKS` | `--max-bookmarks` | No | Provide to fetch remote replies to any posts you have bookmarked. Determines how many of your bookmarks you want to get replies to. Recommended value: `80`. Requires an access token with `read:bookmarks` scope.
-| `MAX_FAVOURITES` | `--max-favourites` | No | Provide to fetch remote replies to any posts you have favourited. Determines how many of your favourites you want to get replies to. Recommended value: `40`. Requires an access token with `read:favourites` scope.
-| `MAX_FOLLOWINGS` | `--max-followings` | No | Provide to backfill profiles for your most recent followings. Determines how many of your last followings you want to backfill. Recommended value: `80`.
-| `MAX_FOLLOWERS` | `--max-followers` | No | Provide to backfill profiles for your most recent followers. Determines how many of your last followers you want to backfill. Recommended value: `80`.
-| `MAX_FOLLOW_REQUESTS` | `--max-follow-requests` | No | Provide to backfill profiles for the API key owner's most recent pending follow requests. Determines how many of your last follow requests you want to backfill. Recommended value: `80`.
-| `FROM_NOTIFICATIONS` | `--from-notifications` | No | Provide to backfill profiles of anyone mentioned in your recent notifications. Determines how many hours of notifications you want to look at. Requires an access token with `read:notifications` scope. Recommended value: `1`, unless you run FediFetcher less than once per hour.
-|`BACKFILL_WITH_CONTEXT` | `--backfill-with-context` | No | Set to `0` to disable fetching remote replies while backfilling profiles. This is enabled by default, but you can disable it, if it's too slow for you.
-|`BACKFILL_MENTIONED_USERS` | `--backfill-mentioned-users` | No | Set to `0` to disable backfilling any mentioned users when fetching the home timeline. This is enabled by default, but you can disable it, if it's too slow for you.
-| `REMEMBER_USERS_FOR_HOURS` | `--remember-users-for-hours` | No | How long between back-filling attempts for non-followed accounts? Defaults to `168`, i.e. one week.
-| `HTTP_TIMEOUT` | `--http-timeout` | No | The timeout for any HTTP requests to the Mastodon API in seconds. Defaults to `5`.
-| -- | `--lock-hours` | No | Determines after how many hours a lock file should be discarded. Not relevant when running the script as GitHub Action, as concurrency is prevented using a different mechanism. Recommended value: `24`.
-| -- | `--lock-file` | No | Location for the lock file. If not specified, will use `lock.lock` under the state directory. Not relevant when running the script as GitHub Action.
-| -- | `--state-dir` | No | Directory storing persistent files, and the default location for lock file. Not relevant when running the script as GitHub Action.
-| `ON_START` | `--on-start` | No | Optionally provide a callback URL that will be pinged when processing is starting. A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
-| `ON_DONE` | `--on-done` | No | Optionally provide a callback URL that will be called when processing is finished.  A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
-| `ON_FAIL` | `--on-fail` | No | Optionally provide a callback URL that will be called when processing has failed.  A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
+Option | Required? | Notes |
+|:----------------------------------------------------|-----------|:------|
+|`access-token` | Yes | The access token. If using GitHub action, this needs to be provided as a Secret called  `ACCESS_TOKEN`. If running as a cron job or a container, you can supply this option as array, to [fetch posts for multiple users](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher) on your instance. |
+|`server`|Yes|The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`. |
+|`home-timeline-length` | No | Provide to fetch remote replies to posts in the API-Key owner's home timeline. Determines how many posts we'll fetch replies for. Recommended value: `200`.
+| `max-bookmarks` | No | Provide to fetch remote replies to any posts you have bookmarked. Determines how many of your bookmarks you want to get replies to. Recommended value: `80`. Requires an access token with `read:bookmarks` scope.
+| `max-favourites` | No | Provide to fetch remote replies to any posts you have favourited. Determines how many of your favourites you want to get replies to. Recommended value: `40`. Requires an access token with `read:favourites` scope.
+| `max-followings` | No | Provide to backfill profiles for your most recent followings. Determines how many of your last followings you want to backfill. Recommended value: `80`.
+| `max-followers` | No | Provide to backfill profiles for your most recent followers. Determines how many of your last followers you want to backfill. Recommended value: `80`.
+| `max-follow-requests` | No | Provide to backfill profiles for the API key owner's most recent pending follow requests. Determines how many of your last follow requests you want to backfill. Recommended value: `80`.
+| `from-notifications` | No | Provide to backfill profiles of anyone mentioned in your recent notifications. Determines how many hours of notifications you want to look at. Requires an access token with `read:notifications` scope. Recommended value: `1`, unless you run FediFetcher less than once per hour.
+| `reply-interval-in-hours` | No | Provide to fetch remote replies to posts that have received replies from users on your own instance. Determines how far back in time we'll go to find posts that have received replies. You must be administrator on your instance to use this option, and this option is not supported on Pleroma / Akkoma and its forks. Recommend value: `0` (disabled). Requires an access token with `admin:read:accounts`.
+|`backfill-with-context` | No | Set to `0` to disable fetching remote replies while backfilling profiles. This is enabled by default, but you can disable it, if it's too slow for you.
+|`backfill-mentioned-users` | No | Set to `0` to disable backfilling any mentioned users when fetching the home timeline. This is enabled by default, but you can disable it, if it's too slow for you.
+| `remember-users-for-hours` | No | How long between back-filling attempts for non-followed accounts? Defaults to `168`, i.e. one week.
+| `http-timeout` | No | The timeout for any HTTP requests to the Mastodon API in seconds. Defaults to `5`.
+| `lock-hours` | No | Determines after how many hours a lock file should be discarded. Not relevant when running the script as GitHub Action, as concurrency is prevented using a different mechanism. Recommended value: `24`.
+| `lock-file` | No | Location for the lock file. If not specified, will use `lock.lock` under the state directory. Not relevant when running the script as GitHub Action.
+| `state-dir` | No | Directory storing persistent files, and the default location for lock file. Not relevant when running the script as GitHub Action.
+| `on-start` | No | Optionally provide a callback URL that will be pinged when processing is starting. A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
+| `on-done` | No | Optionally provide a callback URL that will be called when processing is finished.  A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
+| `on-fail` | No | Optionally provide a callback URL that will be called when processing has failed.  A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
 
 #### Multi User support
 
-If you wish to [run FediFetcher for multiple users on your instance](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher?utm_source=github), you can supply the `--access-token` argument multiple times, with different access tokens for different users. That will allow you to fetch replies and/or backfill profiles for multiple users on your account. Have a look at the [sample script provided](./examples/FediFetcher-multiple-users.sh).
+If you wish to [run FediFetcher for multiple users on your instance](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher?utm_source=github), you can supply the `access-token` as an array, with different access tokens for different users. That will allow you to fetch replies and/or backfill profiles for multiple users on your account. 
 
 This is only supported when running FediFetcher as cron job, or container. Multi-user support is not available when running FediFetcher as GitHub Action.
 
@@ -158,15 +148,15 @@ This is only supported when running FediFetcher as cron job, or container. Multi
    - `read:search`
    - `read:statuses` 
    - `read:accounts`
- - If you are supplying `REPLY_INTERVAL_IN_HOURS` / `--reply-interval-in-hours` you must additionally enable this scope:
+ - If you are supplying `reply-interval-in-hours` you must additionally enable this scope:
    - `admin:read:accounts`
- - If you are supplying `MAX_FOLLOW_REQUESTS` / `--max-follow-requests` you must additionally enable this scope:
+ - If you are supplying `max-follow-requests` you must additionally enable this scope:
    - `read:follows`
- - If you are supplying `MAX_BOOKMARKS` / `--max-bookmarks` you must additionally enable this scope:
+ - If you are supplying `max-bookmarks` you must additionally enable this scope:
    - `read:bookmarks`
- - If you are supplying `MAX_FAVOURITES` / `--max-favourites` you must additionally enable this scope:
+ - If you are supplying `max-favourites` you must additionally enable this scope:
    - `read:favourites`
- - If you are supplying `FROM_NOTIFICATIONS` / `--from-notifications` you must additionally enable this scope:
+ - If you are supplying `from-notifications` you must additionally enable this scope:
    - `read:notifications`
 
 ## Acknowledgments
