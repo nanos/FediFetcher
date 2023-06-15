@@ -35,17 +35,25 @@ You can run FediFetcher either as a GitHub Action, as a scheduled cron job on yo
 
 Regardless of how you want to run FediFetcher, you must first get an access token:
 
+#### If you are an Admin on your instance
+
 1. In Mastodon go to Preferences > Development > New Application
    1. Give it a nice name
    2. Enable the required scopes for your options. You could tick `read` and `admin:read:accounts`, or see below for a list of which scopes are required for which options.
    3. Save
    4. Copy the value of `Your access token`
 
-If you are not a server admin, you do not have access to Preferences > Development. You can use [GetAuth for Mastodon](https://getauth.thms.uk) to generate an Access Token instead.
+#### If you are not an Admin on your Instance
 
-### 2.1) Configure and run the GitHub Action
+1. Go to [GetAuth for Mastodon](https://getauth.thms.uk?scopes=read&client_name=FediFetcher)
+2. Type in your Mastodon instance's domain
+3. Copy the token.
 
-To run FediFetcher as a GitHub Action:
+### 2) Configure and run FediFetcher
+
+Run FediFetcher as a GitHub Action, a cron job, or a container:
+
+#### To run FediFetcher as a GitHub Action:
 
 1. Fork this repository
 2. Add your access token:
@@ -55,35 +63,39 @@ To run FediFetcher as a GitHub Action:
 3. Create a file called `config.json` with your [configuration options](#configuration-options) in the repository root. **Do NOT include the Access Token in your `config.json`!**
 4. Finally go to the Actions tab and enable the action. The action should now automatically run approximately once every 10 min. 
 
-Keep in mind that [the schedule event can be delayed during periods of high loads of GitHub Actions workflow runs](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule).
+> **Note**
+> 
+> Keep in mind that [the schedule event can be delayed during periods of high loads of GitHub Actions workflow runs](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule).
 
-### 2.2) Run FediFetcher locally as a cron job
+#### To run FediFetcher as a cron job:
 
-If you want to, you can of course also run FediFetcher locally as a cron job:
-
-1. To get started, clone this repository.
+1. Clone this repository.
 2. Install requirements: `pip install -r requirements.txt`
 3. Create a `json` file with [your configuration options](#configuration-options). You may wish to store this in the `./artifacts` directory, as that directory is `.gitignore`d
-4. Then simply run this script like so: `python find_posts.py -c=./artifacts/config.json`.  (Read below to get a list of all options.)
+4. Then simply run this script like so: `python find_posts.py -c=./artifacts/config.json`.
  
 If desired, all configuration options can be provided as command line flags, instead of through a JSON file. An [example script](./examples/FediFetcher.sh) can be found in the `examples` folder.
 
 When using a cronjob, we are using file based locking to avoid multiple overlapping executions of the script. The timeout period for the lock can be configured using `lock-hours`.
 
-If you are running FediFetcher locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
+> **Note**
+> 
+> If you are running FediFetcher locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
 
 > **Note**
 > 
 > If you wish to run FediFetcher using Windows Task Scheduler, you can rename the script to the `.pyw` extension instead of `.py`, and it will run silently, without opening a console window.
 
-### 2.3) Run FediFetcher from a container
+#### To run FediFetcher from a container:
 
 FediFetcher is also available in a pre-packaged container, [FediFetcher](https://github.com/nanos/FediFetcher/pkgs/container/fedifetcher) - Thank you [@nikdoof](https://github.com/nikdoof).
 
 1. Pull the container from `ghcr.io`, using Docker or your container tool of choice: `docker pull ghcr.io/nanos/fedifetcher:latest`
-2. Run the container, passing the command line arguments like running the script directly: `docker run -it ghcr.io/nanos/fedifetcher:latest --access-token=<TOKEN> --server=<SERVER>`
+2. Run the container, passing the configurations options as command line arguments: `docker run -it ghcr.io/nanos/fedifetcher:latest --access-token=<TOKEN> --server=<SERVER>`
 
-The same rules for running this as a cron job apply to running the container: don't overlap any executions.
+> **Note**
+> 
+> The same rules for running this as a cron job apply to running the container: don't overlap any executions.
 
 Persistent files are stored in `/app/artifacts` within the container, so you may want to map this to a local folder on your system.
 
@@ -136,13 +148,13 @@ Option | Required? | Notes |
 | `on-done` | No | Optionally provide a callback URL that will be called when processing is finished.  A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
 | `on-fail` | No | Optionally provide a callback URL that will be called when processing has failed.  A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
 
-#### Multi User support
+### Multi User support
 
 If you wish to [run FediFetcher for multiple users on your instance](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher?utm_source=github), you can supply the `access-token` as an array, with different access tokens for different users. That will allow you to fetch replies and/or backfill profiles for multiple users on your account. 
 
 This is only supported when running FediFetcher as cron job, or container. Multi-user support is not available when running FediFetcher as GitHub Action.
 
-#### Required Access Token Scopes
+### Required Access Token Scopes
 
  - For all actions, your access token must include these scopes:
    - `read:search`
