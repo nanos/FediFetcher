@@ -767,6 +767,9 @@ if __name__ == "__main__":
     if(arguments.server == None or arguments.access_token == None):
         log("You must supply at least a server name and an access token")
         sys.exit(1)
+
+    # in case someone provided the server name as url instead, 
+    setattr(arguments, 'server', re.sub(r"^(https://)?([^/]*)/?$", "\\2", arguments.server))
         
 
     runId = uuid.uuid4()
