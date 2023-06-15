@@ -119,7 +119,7 @@ If you configure FediFetcher this way, it'll fetch missing remote replies to the
 
 > **Warning**
 > 
-> **Do NOT** include your `access-token` in the `config.json` when running FediFetcher as GitHub Action. When running FediFetcher as GitHub Action **ALWAYS** [set the Access Token as an Action Secret](#21-configure-and-run-the-github-action).
+> **Do NOT** include your `access-token` in the `config.json` when running FediFetcher as GitHub Action. When running FediFetcher as GitHub Action **ALWAYS** [set the Access Token as an Action Secret](#to-run-fedifetcher-as-a-github-action).
 
 #### Advanced Options
 
