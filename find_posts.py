@@ -356,21 +356,20 @@ def get_reply_toots(user_id, server, access_token, seen_urls, reply_since):
     )
 
 
-def get_all_known_context_urls(server, reply_toots,parsed_urls):
+def get_all_known_context_urls(server, reply_toots, parsed_urls):
     """get the context toots of the given toots from their original server"""
-    known_context_urls = set(
-        filter(
-            lambda url: not url.startswith(f"https://{server}/"),
-            itertools.chain.from_iterable(
-                get_toot_context(*parse_url(toot["url"] if toot["reblog"] is None else toot["reblog"]["url"],parsed_urls), toot["url"])
-                for toot in filter(
-                    lambda toot: toot_has_parseable_url(toot,parsed_urls),
-                    reply_toots
-                )            
-            ),
-        )
-    )
+    known_context_urls = set()
+    
+    for toot in reply_toots:
+        if toot_has_parseable_url(toot, parsed_urls):
+            url = toot["url"] if toot["reblog"] is None else toot["reblog"]["url"]
+            parsed_url = parse_url(url, parsed_urls)
+            context = get_toot_context(parsed_url[0], parsed_url[1], url)
+            known_context_urls.update(context) # type: ignore
+    
+    known_context_urls = set(filter(lambda url: not url.startswith(f"https://{server}/"), known_context_urls))
     log(f"Found {len(known_context_urls)} known context toots")
+    
     return known_context_urls
 
 
