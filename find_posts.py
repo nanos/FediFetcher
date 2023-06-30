@@ -113,6 +113,37 @@ def get_user_posts(user, know_followings, server):
         log(f"{user['acct']} is a local user. Skip")
         know_followings.add(user['acct'])
         return None
+    if re.match(r"^https:\/\/[^\/]+\/c\/", user['url']):
+        try:
+            url = f"https://{parsed_url[0]}/api/v3/post/list?community_name={parsed_url[1]}&sort=New&limit=50"
+            response = get(url)
+
+            if(response.status_code == 200):
+                posts = [post['post'] for post in response.json()['posts']]
+                for post in posts:
+                    post['url'] = post['ap_id']
+                return posts
+
+        except Exception as ex:
+            log(f"Error getting community posts for community {parsed_url[1]}: {ex}")
+        return None
+    
+    if re.match(r"^https:\/\/[^\/]+\/u\/", user['url']):
+        try:
+            url = f"https://{parsed_url[0]}/api/v3/user?username={parsed_url[1]}&sort=New&limit=50"
+            response = get(url)
+
+            if(response.status_code == 200):
+                comments = [post['post'] for post in response.json()['comments']]
+                posts = [post['post'] for post in response.json()['posts']]
+                all_posts = comments + posts
+                for post in all_posts:
+                    post['url'] = post['ap_id']
+                return all_posts
+            
+        except Exception as ex:
+            log(f"Error getting user posts for user {parsed_url[1]}: {ex}")
+        return None
     
     try:
         user_id = get_user_id(parsed_url[0], parsed_url[1])
@@ -533,19 +564,15 @@ def parse_pixelfed_profile_url(url):
 def parse_lemmy_url(url):
     """parse a Lemmy URL and return the server, and ID"""
     match = re.match(
-        r"https://(?P<server>[^/]+)/comment/(?P<toot_id>[^/]+)", url
+        r"https://(?P<server>[^/]+)/(?:comment|post)/(?P<toot_id>[^/]+)", url
     )
-    if match is None:
-        match = re.match(
-            r"https://(?P<server>[^/]+)/post/(?P<toot_id>[^/]+)", url
-        )
     if match is not None:
         return (match.group("server"), match.group("toot_id"))
     return None
 
 def parse_lemmy_profile_url(url):
     """parse a Lemmy Profile URL and return the server and username"""
-    match = re.match(r"https://(?P<server>[^/]+)/u/(?P<username>[^/]+)", url)
+    match = re.match(r"https://(?P<server>[^/]+)/(?:u|c)/(?P<username>[^/]+)", url)
     if match is not None:
         return (match.group("server"), match.group("username"))
     return None
@@ -642,7 +669,7 @@ def get_comment_context(server, toot_id, toot_url):
 
 def get_comments_urls(server, post_id, toot_url):
     """get the URLs of the comments of the given post"""
-    url = f"https://{server}/api/v3/comment/list?post_id={post_id}"
+    url = f"https://{server}/api/v3/comment/list?post_id={post_id}&sort=New&limit=50"
     try:
         resp = get(url)
     except Exception as ex:
