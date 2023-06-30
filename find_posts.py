@@ -469,11 +469,12 @@ def parse_user_url(url):
     if match is not None:
         return match
 
-    match = parse_pixelfed_profile_url(url)
+    match = parse_lemmy_profile_url(url)
     if match is not None:
         return match
 
-    match = parse_lemmy_profile_url(url)
+# Pixelfed profile paths do not use a subdirectory, so we need to match for them last.
+    match = parse_pixelfed_profile_url(url)
     if match is not None:
         return match
 
@@ -493,12 +494,12 @@ def parse_url(url, parsed_urls):
             parsed_urls[url] = match
 
     if url not in parsed_urls:
-        match = parse_pixelfed_url(url)
+        match = parse_lemmy_url(url)
         if match is not None:
             parsed_urls[url] = match
 
     if url not in parsed_urls:
-        match = parse_lemmy_url(url)
+        match = parse_pixelfed_url(url)
         if match is not None:
             parsed_urls[url] = match
 
