@@ -661,7 +661,6 @@ def get_comment_context(server, toot_id, toot_url):
         try:
             res = resp.json()
             post_id = res['comment_view']['comment']['post_id']
-            log(f"Got parent post ID {post_id} for comment {toot_url}")
             return get_comments_urls(server, post_id, toot_url)
         except Exception as ex:
             log(f"Error parsing context for comment {toot_url}. Exception: {ex}")
@@ -674,6 +673,23 @@ def get_comment_context(server, toot_id, toot_url):
 
 def get_comments_urls(server, post_id, toot_url):
     """get the URLs of the comments of the given post"""
+    urls = []
+    url = f"https://{server}/api/v3/post?id={post_id}"
+    try:
+        resp = get(url)
+    except Exception as ex:
+        log(f"Error getting post {post_id} from {toot_url}. Exception: {ex}")
+        return []
+
+    if resp.status_code == 200:
+        try:
+            res = resp.json()
+            if res['post_view']['counts']['comments'] == 0:
+                return []
+            urls.append(res['post_view']['post']['ap_id'])
+        except Exception as ex:
+            log(f"Error parsing post {post_id} from {toot_url}. Exception: {ex}")
+
     url = f"https://{server}/api/v3/comment/list?post_id={post_id}&sort=New&limit=50"
     try:
         resp = get(url)
@@ -686,19 +702,17 @@ def get_comments_urls(server, post_id, toot_url):
             res = resp.json()
             list_of_urls = [comment_info['comment']['ap_id'] for comment_info in res['comments']]
             log(f"Got {len(list_of_urls)} comments for post {toot_url}")
-            return list_of_urls
+            urls.extend(list_of_urls)
+            return urls
         except Exception as ex:
             log(f"Error parsing comments for post {toot_url}. Exception: {ex}")
-        return []
     elif resp.status_code == 429:
         reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
         log(f"Rate Limit hit when getting comments for {toot_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
         time.sleep((reset - datetime.now()).total_seconds() + 1)
         return get_comments_urls(server, post_id, toot_url)
 
-    log(
-        f"Error getting comments for post {toot_url}. Status code: {resp.status_code}"
-    )
+    log(f"Error getting comments for post {toot_url}. Status code: {resp.status_code}")
     return []
 
 def add_context_urls(server, access_token, context_urls, seen_urls):
