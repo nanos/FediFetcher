@@ -396,7 +396,10 @@ def get_all_known_context_urls(server, reply_toots, parsed_urls):
             url = toot["url"] if toot["reblog"] is None else toot["reblog"]["url"]
             parsed_url = parse_url(url, parsed_urls)
             context = get_toot_context(parsed_url[0], parsed_url[1], url)
-            known_context_urls.update(context) # type: ignore
+            if context is not None:
+                known_context_urls.update(context) # type: ignore
+            else:
+                log(f"Error getting context for toot {url}")
     
     known_context_urls = set(filter(lambda url: not url.startswith(f"https://{server}/"), known_context_urls))
     log(f"Found {len(known_context_urls)} known context toots")
