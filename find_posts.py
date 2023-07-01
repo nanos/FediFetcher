@@ -74,7 +74,7 @@ def add_user_posts(server, access_token, followings, know_followings, all_known_
                 count = 0
                 failed = 0
                 for post in posts:
-                    if post['reblog'] == None and post['url'] != None and post['url'] not in seen_urls:
+                    if post.get('reblog') is None and post.get('url') is not None and post.get('url') not in seen_urls:
                         added = add_post_with_context(post, server, access_token, seen_urls)
                         if added is True:
                             seen_urls.add(post['url'])
@@ -90,7 +90,7 @@ def add_post_with_context(post, server, access_token, seen_urls):
     added = add_context_url(post['url'], server, access_token)
     if added is True:
         seen_urls.add(post['url'])
-        if (post['replies_count'] or post['in_reply_to_id']) and arguments.backfill_with_context > 0:
+        if ('replies_count' in post or 'in_reply_to_id' in post) and getattr(arguments, 'backfill_with_context', 0) > 0:
             parsed_urls = {}
             parsed = parse_url(post['url'], parsed_urls)
             if parsed == None:
@@ -112,6 +112,37 @@ def get_user_posts(user, know_followings, server):
     if(parsed_url[0] == server):
         log(f"{user['acct']} is a local user. Skip")
         know_followings.add(user['acct'])
+        return None
+    if re.match(r"^https:\/\/[^\/]+\/c\/", user['url']):
+        try:
+            url = f"https://{parsed_url[0]}/api/v3/post/list?community_name={parsed_url[1]}&sort=New&limit=50"
+            response = get(url)
+
+            if(response.status_code == 200):
+                posts = [post['post'] for post in response.json()['posts']]
+                for post in posts:
+                    post['url'] = post['ap_id']
+                return posts
+
+        except Exception as ex:
+            log(f"Error getting community posts for community {parsed_url[1]}: {ex}")
+        return None
+    
+    if re.match(r"^https:\/\/[^\/]+\/u\/", user['url']):
+        try:
+            url = f"https://{parsed_url[0]}/api/v3/user?username={parsed_url[1]}&sort=New&limit=50"
+            response = get(url)
+
+            if(response.status_code == 200):
+                comments = [post['post'] for post in response.json()['comments']]
+                posts = [post['post'] for post in response.json()['posts']]
+                all_posts = comments + posts
+                for post in all_posts:
+                    post['url'] = post['ap_id']
+                return all_posts
+            
+        except Exception as ex:
+            log(f"Error getting user posts for user {parsed_url[1]}: {ex}")
         return None
     
     try:
@@ -356,21 +387,24 @@ def get_reply_toots(user_id, server, access_token, seen_urls, reply_since):
     )
 
 
-def get_all_known_context_urls(server, reply_toots,parsed_urls):
+def get_all_known_context_urls(server, reply_toots, parsed_urls):
     """get the context toots of the given toots from their original server"""
-    known_context_urls = set(
-        filter(
-            lambda url: not url.startswith(f"https://{server}/"),
-            itertools.chain.from_iterable(
-                get_toot_context(*parse_url(toot["url"] if toot["reblog"] is None else toot["reblog"]["url"],parsed_urls), toot["url"])
-                for toot in filter(
-                    lambda toot: toot_has_parseable_url(toot,parsed_urls),
-                    reply_toots
-                )            
-            ),
-        )
-    )
+    known_context_urls = set()
+    
+    for toot in reply_toots:
+        if toot_has_parseable_url(toot, parsed_urls):
+            url = toot["url"] if toot["reblog"] is None else toot["reblog"]["url"]
+            parsed_url = parse_url(url, parsed_urls)
+            context = get_toot_context(parsed_url[0], parsed_url[1], url)
+            if context is not None:
+                for item in context:
+                    known_context_urls.add(item)
+            else:
+                log(f"Error getting context for toot {url}")
+    
+    known_context_urls = set(filter(lambda url: not url.startswith(f"https://{server}/"), known_context_urls))
     log(f"Found {len(known_context_urls)} known context toots")
+    
     return known_context_urls
 
 
@@ -435,6 +469,11 @@ def parse_user_url(url):
     if match is not None:
         return match
 
+    match = parse_lemmy_profile_url(url)
+    if match is not None:
+        return match
+
+# Pixelfed profile paths do not use a subdirectory, so we need to match for them last.
     match = parse_pixelfed_profile_url(url)
     if match is not None:
         return match
@@ -455,6 +494,11 @@ def parse_url(url, parsed_urls):
             parsed_urls[url] = match
 
     if url not in parsed_urls:
+        match = parse_lemmy_url(url)
+        if match is not None:
+            parsed_urls[url] = match
+
+    if url not in parsed_urls:
         match = parse_pixelfed_url(url)
         if match is not None:
             parsed_urls[url] = match
@@ -468,7 +512,7 @@ def parse_url(url, parsed_urls):
 def parse_mastodon_profile_url(url):
     """parse a Mastodon Profile URL and return the server and username"""
     match = re.match(
-        r"https://(?P<server>.*)/@(?P<username>.*)", url
+        r"https://(?P<server>[^/]+)/@(?P<username>[^/]+)", url
     )
     if match is not None:
         return (match.group("server"), match.group("username"))
@@ -477,7 +521,7 @@ def parse_mastodon_profile_url(url):
 def parse_mastodon_url(url):
     """parse a Mastodon URL and return the server and ID"""
     match = re.match(
-        r"https://(?P<server>.*)/@(?P<username>.*)/(?P<toot_id>.*)", url
+        r"https://(?P<server>[^/]+)/@(?P<username>[^/]+)/(?P<toot_id>[^/]+)", url
     )
     if match is not None:
         return (match.group("server"), match.group("toot_id"))
@@ -486,14 +530,14 @@ def parse_mastodon_url(url):
 
 def parse_pleroma_url(url):
     """parse a Pleroma URL and return the server and ID"""
-    match = re.match(r"https://(?P<server>.*)/objects/(?P<toot_id>.*)", url)
+    match = re.match(r"https://(?P<server>[^/]+)/objects/(?P<toot_id>[^/]+)", url)
     if match is not None:
         server = match.group("server")
         url = get_redirect_url(url)
         if url is None:
             return None
         
-        match = re.match(r"/notice/(?P<toot_id>.*)", url)
+        match = re.match(r"/notice/(?P<toot_id>[^/]+)", url)
         if match is not None:
             return (server, match.group("toot_id"))
         return None
@@ -501,7 +545,7 @@ def parse_pleroma_url(url):
 
 def parse_pleroma_profile_url(url):
     """parse a Pleroma Profile URL and return the server and username"""
-    match = re.match(r"https://(?P<server>.*)/users/(?P<username>.*)", url)
+    match = re.match(r"https://(?P<server>[^/]+)/users/(?P<username>[^/]+)", url)
     if match is not None:
         return (match.group("server"), match.group("username"))
     return None
@@ -509,7 +553,7 @@ def parse_pleroma_profile_url(url):
 def parse_pixelfed_url(url):
     """parse a Pixelfed URL and return the server and ID"""
     match = re.match(
-        r"https://(?P<server>.*)/p/(?P<username>.*)/(?P<toot_id>.*)", url
+        r"https://(?P<server>[^/]+)/p/(?P<username>[^/]+)/(?P<toot_id>[^/]+)", url
     )
     if match is not None:
         return (match.group("server"), match.group("toot_id"))
@@ -517,11 +561,26 @@ def parse_pixelfed_url(url):
 
 def parse_pixelfed_profile_url(url):
     """parse a Pixelfed Profile URL and return the server and username"""
-    match = re.match(r"https://(?P<server>.*)/(?P<username>.*)", url)
+    match = re.match(r"https://(?P<server>[^/]+)/(?P<username>[^/]+)", url)
     if match is not None:
         return (match.group("server"), match.group("username"))
     return None
 
+def parse_lemmy_url(url):
+    """parse a Lemmy URL and return the server, and ID"""
+    match = re.match(
+        r"https://(?P<server>[^/]+)/(?:comment|post)/(?P<toot_id>[^/]+)", url
+    )
+    if match is not None:
+        return (match.group("server"), match.group("toot_id"))
+    return None
+
+def parse_lemmy_profile_url(url):
+    """parse a Lemmy Profile URL and return the server and username"""
+    match = re.match(r"https://(?P<server>[^/]+)/(?:u|c)/(?P<username>[^/]+)", url)
+    if match is not None:
+        return (match.group("server"), match.group("username"))
+    return None
 
 def get_redirect_url(url):
     """get the URL given URL redirects to"""
@@ -559,6 +618,10 @@ def get_all_context_urls(server, replied_toot_ids):
 
 def get_toot_context(server, toot_id, toot_url):
     """get the URLs of the context toots of the given toot"""
+    if toot_url.find("/comment/") != -1:
+        return get_comment_context(server, toot_id, toot_url)
+    if toot_url.find("/post/") != -1:
+        return get_comments_urls(server, toot_id, toot_url)
     url = f"https://{server}/api/v1/statuses/{toot_id}/context"
     try:
         resp = get(url)
@@ -585,6 +648,72 @@ def get_toot_context(server, toot_id, toot_url):
     )
     return []
 
+def get_comment_context(server, toot_id, toot_url):
+    """get the URLs of the context toots of the given toot"""
+    comment = f"https://{server}/api/v3/comment?id={toot_id}"
+    try:
+        resp = get(comment)
+    except Exception as ex:
+        log(f"Error getting comment {toot_id} from {toot_url}. Exception: {ex}")
+        return []
+    
+    if resp.status_code == 200:
+        try:
+            res = resp.json()
+            post_id = res['comment_view']['comment']['post_id']
+            return get_comments_urls(server, post_id, toot_url)
+        except Exception as ex:
+            log(f"Error parsing context for comment {toot_url}. Exception: {ex}")
+        return []
+    elif resp.status_code == 429:
+        reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
+        log(f"Rate Limit hit when getting context for {toot_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
+        time.sleep((reset - datetime.now()).total_seconds() + 1)
+        return get_comment_context(server, toot_id, toot_url)
+
+def get_comments_urls(server, post_id, toot_url):
+    """get the URLs of the comments of the given post"""
+    urls = []
+    url = f"https://{server}/api/v3/post?id={post_id}"
+    try:
+        resp = get(url)
+    except Exception as ex:
+        log(f"Error getting post {post_id} from {toot_url}. Exception: {ex}")
+        return []
+
+    if resp.status_code == 200:
+        try:
+            res = resp.json()
+            if res['post_view']['counts']['comments'] == 0:
+                return []
+            urls.append(res['post_view']['post']['ap_id'])
+        except Exception as ex:
+            log(f"Error parsing post {post_id} from {toot_url}. Exception: {ex}")
+
+    url = f"https://{server}/api/v3/comment/list?post_id={post_id}&sort=New&limit=50"
+    try:
+        resp = get(url)
+    except Exception as ex:
+        log(f"Error getting comments for post {post_id} from {toot_url}. Exception: {ex}")
+        return []
+
+    if resp.status_code == 200:
+        try:
+            res = resp.json()
+            list_of_urls = [comment_info['comment']['ap_id'] for comment_info in res['comments']]
+            log(f"Got {len(list_of_urls)} comments for post {toot_url}")
+            urls.extend(list_of_urls)
+            return urls
+        except Exception as ex:
+            log(f"Error parsing comments for post {toot_url}. Exception: {ex}")
+    elif resp.status_code == 429:
+        reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
+        log(f"Rate Limit hit when getting comments for {toot_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
+        time.sleep((reset - datetime.now()).total_seconds() + 1)
+        return get_comments_urls(server, post_id, toot_url)
+
+    log(f"Error getting comments for post {toot_url}. Status code: {resp.status_code}")
+    return []
 
 def add_context_urls(server, access_token, context_urls, seen_urls):
     """add the given toot URLs to the server"""
