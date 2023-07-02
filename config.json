@@ -1,0 +1,11 @@
+  {
+    "server": "tunahan.social",
+    "home-timeline-length": 200,
+    "max-followings": 80,
+    "max-favourites:": 40,
+    "max-bookmarks": 80,
+    "max-followers": 80,
+    "max-follow-requests": 80,
+    "from-notifications": 1,
+    "lock-hours": 24
+  }
