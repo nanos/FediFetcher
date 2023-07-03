@@ -12,6 +12,7 @@ import requests
 import time
 import argparse
 import uuid
+import git
 
 argparser=argparse.ArgumentParser()
 
@@ -895,7 +896,16 @@ class OrderedSet:
 if __name__ == "__main__":
     start = datetime.now()
 
-    log(f"Starting FediFetcher")
+    repo = git.Repo(os.getcwd())
+
+    tag = next((tag for tag in repo.tags if tag.commit == repo.head.commit), None)
+
+    if(isinstance(tag, git.TagReference)) :
+        version = tag.name
+    else:
+        version = f"on commit {repo.head.commit.name_rev}"
+
+    log(f"Starting FediFetcher {version}")
 
     arguments = argparser.parse_args()
 
