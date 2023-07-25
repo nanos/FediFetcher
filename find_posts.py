@@ -75,7 +75,7 @@ def add_user_posts(server, access_token, followings, know_followings, all_known_
                 count = 0
                 failed = 0
                 for post in posts:
-                    if post.get('reblog') is None and post.get('url') is not None and post.get('url') not in seen_urls:
+                    if post.get('reblog') is None and post.get('renoteId') is None and post.get('url') is not None and post.get('url') not in seen_urls:
                         added = add_post_with_context(post, server, access_token, seen_urls)
                         if added is True:
                             seen_urls.add(post['url'])
@@ -150,7 +150,11 @@ def get_user_posts(user, know_followings, server):
         user_id = get_user_id(parsed_url[0], parsed_url[1])
     except Exception as ex:
         log(f"Error getting user ID for user {user['acct']}: {ex}")
-        return None
+
+        ## HACK HACK HACK: in the future actually try to detect the correct APIs to use at runtime
+        log('trying misskey')
+
+        return get_user_posts_misskey(user, know_followings, parsed_url[0])
     
     try:
         url = f"https://{parsed_url[0]}/api/v1/accounts/{user_id}/statuses?limit=40"
@@ -169,7 +173,57 @@ def get_user_posts(user, know_followings, server):
     except Exception as ex:
         log(f"Error getting posts for user {user['acct']}: {ex}")
         return None
+
+def get_user_posts_misskey(user, know_followings, server):
+    # query user info via search api
+    # we could filter by host but there's no way to limit that to just the main host on firefish currently
+    # on misskey it works if you supply '.' as the host but firefish does not
+    url = f'https://{server}/api/users/search-by-username-and-host'
+    try:
+        resp = post(url, { 'username': user['username'] })
+    except Exception as ex:
+        log(f"Error finding user {user['username']} from {server}. Exception: {ex}")
+        return None
+
+    if resp.status_code == 200:
+        try:
+            res = resp.json()
+            for user in res:
+                if user['host'] is None:
+                    userId = user['id']
+                    break
+            if userId is None:
+                raise Exception('user not found on server in search')
+        except Exception as ex:
+            log(f"Error finding user {user['username']} from {server}. Exception: {ex}")
+            return None
+    else:
+        log(f"Error finding user {user['username']} from {server}. Status Code: {resp.status_code}")
+        return None
+
+    url = f'https://{server}/api/users/notes'
+    try:
+        resp = post(url, { 'userId': userId, 'limit': 40 })
+    except Exception as ex:
+        log(f"Error getting posts by user {user['username']} from {server}. Exception: {ex}")
+        return None
+
+    if resp.status_code == 200:
+        try:
+            notes = resp.json()
+            for note in notes:
+                if note.get('url') is None:
+                    # add this to make it look like Mastodon status objects
+                    note.update({ 'url': f"https://{server}/notes/{note['id']}" })
+            return notes
+        except Exception as ex:
+            log(f"Error getting posts by user {user['username']} from {server}. Exception: {ex}")
+            return None
+    else:
+        log(f"Error getting posts by user {user['username']} from {server}. Status Code: {resp.status_code}")
+        return None
     
+
 def get_new_follow_requests(server, access_token, max, known_followings):
     """Get any new follow requests for the specified user, up to the max number provided"""
 
@@ -505,6 +559,11 @@ def parse_url(url, parsed_urls):
             parsed_urls[url] = match
 
     if url not in parsed_urls:
+        match = parse_misskey_url(url)
+        if match is not None:
+            parsed_urls[url] = match
+
+    if url not in parsed_urls:
         log(f"Error parsing toot URL {url}")
         parsed_urls[url] = None
     
@@ -555,6 +614,15 @@ def parse_pixelfed_url(url):
     """parse a Pixelfed URL and return the server and ID"""
     match = re.match(
         r"https://(?P<server>[^/]+)/p/(?P<username>[^/]+)/(?P<toot_id>[^/]+)", url
+    )
+    if match is not None:
+        return (match.group("server"), match.group("toot_id"))
+    return None
+
+def parse_misskey_url(url):
+    """parse a Misskey URL and return the server and ID"""
+    match = re.match(
+        r"https://(?P<server>[^/]+)/notes/(?P<toot_id>[^/]+)", url
     )
     if match is not None:
         return (match.group("server"), match.group("toot_id"))
@@ -623,6 +691,8 @@ def get_toot_context(server, toot_id, toot_url):
         return get_comment_context(server, toot_id, toot_url)
     if toot_url.find("/post/") != -1:
         return get_comments_urls(server, toot_id, toot_url)
+    if toot_url.find("/notes/") != -1:
+        return get_misskey_urls(server, toot_id, toot_url)
     url = f"https://{server}/api/v1/statuses/{toot_id}/context"
     try:
         resp = get(url)
@@ -715,6 +785,47 @@ def get_comments_urls(server, post_id, toot_url):
 
     log(f"Error getting comments for post {toot_url}. Status code: {resp.status_code}")
     return []
+
+def get_misskey_urls(server, post_id, toot_url):
+    """get the URLs of the comments of a given misskey post"""
+    urls = []
+    url = f"https://{server}/api/notes/children"
+    try:
+        resp = post(url, { 'noteId': post_id })
+    except Exception as ex:
+        log(f"Error getting post {post_id} from {toot_url}. Exception: {ex}")
+        return []
+
+    if resp.status_code == 200:
+        try:
+            res = resp.json()
+            log(f"Got children for misskey post {toot_url}")
+            list_of_urls = [f'https://{server}/notes/{comment_info["id"]}' for comment_info in res]
+            urls.extend(list_of_urls)
+        except Exception as ex:
+            log(f"Error parsing post {post_id} from {toot_url}. Exception: {ex}")
+    else:
+        log(f"Error getting post {post_id} from {toot_url}. Status Code: {resp.status_code}")
+
+    url = f"https://{server}/api/notes/conversation"
+    try:
+        resp = post(url, { 'noteId': post_id })
+    except Exception as ex:
+        log(f"Error getting post {post_id} from {toot_url}. Exception: {ex}")
+        return []
+
+    if resp.status_code == 200:
+        try:
+            res = resp.json()
+            log(f"Got conversation for misskey post {toot_url}")
+            list_of_urls = [f'https://{server}/notes/{comment_info["id"]}' for comment_info in res]
+            urls.extend(list_of_urls)
+        except Exception as ex:
+            log(f"Error parsing post {post_id} from {toot_url}. Exception: {ex}")
+    else:
+        log(f"Error getting post {post_id} from {toot_url}. Status Code: {resp.status_code}")
+
+    return urls
 
 def add_context_urls(server, access_token, context_urls, seen_urls):
     """add the given toot URLs to the server"""
@@ -842,6 +953,28 @@ def get(url, headers = {}, timeout = 0, max_tries = 5):
             time.sleep(wait)
             return get(url, headers, timeout, max_tries - 1)
         
+        raise Exception(f"Maximum number of retries exceeded for rate limited request {url}")
+    return response
+
+def post(url, json, headers = {}, timeout = 0, max_tries = 5):
+    """A simple wrapper to make a post request while providing our user agent, and respecting rate limits"""
+    h = headers.copy()
+    if 'User-Agent' not in h:
+        h['User-Agent'] = 'FediFetcher (https://go.thms.uk/mgr)'
+
+    if timeout == 0:
+        timeout = arguments.http_timeout
+
+    response = requests.post( url, json=json, headers= h, timeout=timeout)
+    if response.status_code == 429:
+        if max_tries > 0:
+            reset = parser.parse(response.headers['x-ratelimit-reset'])
+            now = datetime.now(datetime.now().astimezone().tzinfo)
+            wait = (reset - now).total_seconds() + 1
+            log(f"Rate Limit hit requesting {url}. Waiting {wait} sec to retry at {response.headers['x-ratelimit-reset']}")
+            time.sleep(wait)
+            return post(url, json, headers, timeout, max_tries - 1)
+
         raise Exception(f"Maximum number of retries exceeded for rate limited request {url}")
     return response
 
