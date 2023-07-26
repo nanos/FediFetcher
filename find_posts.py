@@ -13,6 +13,7 @@ import time
 import argparse
 import uuid
 import git
+import defusedxml.ElementTree as ET
 
 argparser=argparse.ArgumentParser()
 
@@ -1025,6 +1026,132 @@ class OrderedSet:
     def toJSON(self):
         return json.dump(self._dict, f, default=str)
 
+def get_server_from_host_meta(server):
+    url = f'https://{server}/.well-known/host-meta'
+    try:
+        resp = get(url, timeout = 30)
+    except Exception as ex:
+        log(f"Error getting host meta for {server}. Exception: {ex}")
+        return None
+
+    if resp.status_code == 200:
+        try:
+            hostMeta = ET.fromstring(resp.text)
+            lrdd = hostMeta.find(".//{http://docs.oasis-open.org/ns/xri/xrd-1.0}Link[@rel='lrdd']")
+            url = lrdd.get('template')
+            match = re.match(
+                r"https://(?P<server>[^/]+)/", url
+            )
+            if match is not None:
+                return match.group("server")
+            else:
+                raise Exception('server not found in lrdd')
+                return None
+        except Exception as ex:
+            log(f'Error parsing host meta for {server}. Exception: {ex}')
+            return None
+    else:
+        log(f'Error getting host meta for {server}. Status Code: {resp.status_code}')
+        return None
+
+def get_nodeinfo(server, host_meta_fallback = False):
+    url = f'https://{server}/.well-known/nodeinfo'
+    try:
+        resp = get(url, timeout = 30)
+    except Exception as ex:
+        log(f"Error getting host node info for {server}. Exception: {ex}")
+        return None
+
+    # if well-known nodeinfo isn't found, try to check host-meta for a webfinger URL
+    # needed on servers where the display domain is different than the web domain
+    if resp.status_code != 200 and not host_meta_fallback:
+        # not found, try to check host-meta as a fallback
+        log(f'nodeinfo for {server} not found, checking host-meta')
+        new_server = get_server_from_host_meta(server)
+        if new_server is not None:
+            return get_nodeinfo(new_server, True)
+        else:
+            return None
+
+    if resp.status_code == 200:
+        try:
+            nodeInfo = resp.json()
+            for link in nodeInfo['links']:
+                if link['rel'] in [
+                    'http://nodeinfo.diaspora.software/ns/schema/2.0',
+                    'http://nodeinfo.diaspora.software/ns/schema/2.1',
+                ]:
+                    nodeLoc = link['href']
+                    break
+        except Exception as ex:
+            log(f'error getting server {server} info from well-known node info. Exception: {ex}')
+    else:
+        log(f'Error getting well-known host node info for {server}. Status Code: {resp.status_code}')
+        return None
+
+    if nodeLoc is None:
+        log(f'could not find link to node info in well-known nodeinfo of {server}')
+
+    # regrab server from nodeLoc, again in the case of different display and web domains
+    try:
+        match = re.match(
+            r"https://(?P<server>[^/]+)/", nodeLoc
+        )
+        server = match.group('server')
+    except Exception as ex:
+        log(f"Error getting web server name from {server}. Exception: {ex}")
+        return None
+
+    try:
+        resp = get(nodeLoc, timeout = 30)
+    except Exception as ex:
+        log(f"Error getting host node info for {server}. Exception: {ex}")
+        return None
+
+    if resp.status_code == 200:
+        try:
+            nodeInfo = resp.json()
+            if 'activitypub' not in nodeInfo['protocols']:
+                log(f'server {server} does not support activitypub, skipping')
+                return None
+            return {
+                'webserver': server,
+                'software': nodeInfo['software']['name'],
+                'version': nodeInfo['software']['version'],
+            }
+        except Exception as ex:
+            log(f'error getting server {server} info from nodeinfo. Exception: {ex}')
+    else:
+        log(f'Error getting host node info for {server}. Status Code: {resp.status_code}')
+        return None
+
+    return None
+
+def get_server_info(server, seen_hosts):
+    if server in seen_hosts:
+        return seen_hosts[server]
+
+    nodeinfo = get_nodeinfo(server)
+    if nodeinfo is None:
+        seen_hosts[server] = None
+    else:
+        if nodeinfo['software'] in ['misskey', 'calckey', 'firefish']:
+            nodeinfo['supportsMisskeyApi'] = True
+        else:
+            nodeinfo['supportsMisskeyApi'] = False
+
+        seen_hosts[server] = nodeinfo
+        if server is not nodeinfo['webserver']:
+            seen_hosts[nodeinfo['webserver']] = nodeinfo
+
+    return nodeinfo
+
+# arguments = argparser.parse_args()
+# seen_hosts = {}
+# test = get_server_info('mastodon.social', seen_hosts)
+# log(f'test: {test}')
+# log(f'seen_hosts: {seen_hosts}')
+# exit()
 
 if __name__ == "__main__":
     start = datetime.now()
