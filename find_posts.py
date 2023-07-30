@@ -67,17 +67,17 @@ def get_favourites(server, access_token, max):
         "Authorization": f"Bearer {access_token}",
     })
 
-def add_user_posts(server, access_token, followings, know_followings, all_known_users, seen_urls):
+def add_user_posts(server, access_token, followings, known_followings, all_known_users, seen_urls, seen_hosts):
     for user in followings:
         if user['acct'] not in all_known_users and not user['url'].startswith(f"https://{server}/"):
-            posts = get_user_posts(user, know_followings, server)
+            posts = get_user_posts(user, known_followings, server, seen_hosts)
 
             if(posts != None):
                 count = 0
                 failed = 0
                 for post in posts:
                     if post.get('reblog') is None and post.get('renoteId') is None and post.get('url') is not None and post.get('url') not in seen_urls:
-                        added = add_post_with_context(post, server, access_token, seen_urls)
+                        added = add_post_with_context(post, server, access_token, seen_urls, seen_hosts)
                         if added is True:
                             seen_urls.add(post['url'])
                             count += 1
@@ -85,10 +85,10 @@ def add_user_posts(server, access_token, followings, know_followings, all_known_
                             failed += 1
                 log(f"Added {count} posts for user {user['acct']} with {failed} errors")
                 if failed == 0:
-                    know_followings.add(user['acct'])
+                    known_followings.add(user['acct'])
                     all_known_users.add(user['acct'])
 
-def add_post_with_context(post, server, access_token, seen_urls):
+def add_post_with_context(post, server, access_token, seen_urls, seen_hosts):
     added = add_context_url(post['url'], server, access_token)
     if added is True:
         seen_urls.add(post['url'])
@@ -97,27 +97,72 @@ def add_post_with_context(post, server, access_token, seen_urls):
             parsed = parse_url(post['url'], parsed_urls)
             if parsed == None:
                 return True
-            known_context_urls = get_all_known_context_urls(server, [post],parsed_urls)
+            known_context_urls = get_all_known_context_urls(server, [post],parsed_urls, seen_hosts)
             add_context_urls(server, access_token, known_context_urls, seen_urls)
         return True
     
     return False
 
-def get_user_posts(user, know_followings, server):
+def get_user_posts(user, known_followings, server, seen_hosts):
     parsed_url = parse_user_url(user['url'])
 
     if parsed_url == None:
         # We are adding it as 'known' anyway, because we won't be able to fix this.
-        know_followings.add(user['acct'])
+        known_followings.add(user['acct'])
         return None
     
     if(parsed_url[0] == server):
         log(f"{user['acct']} is a local user. Skip")
-        know_followings.add(user['acct'])
+        known_followings.add(user['acct'])
         return None
-    if re.match(r"^https:\/\/[^\/]+\/c\/", user['url']):
+
+    post_server = get_server_info(parsed_url[0], seen_hosts)
+    if post_server is None:
+        log(f'server {parsed_url[0]} not found for post')
+        return None
+
+    if post_server['mastodonApiSupport']:
+        return get_user_posts_mastodon(parsed_url[1], post_server['webserver'])
+
+    if post_server['lemmyApiSupport']:
+        return get_user_posts_lemmy(parsed_url[1], user['url'], post_server['webserver'])
+
+    if post_server['misskeyApiSupport']:
+        return get_user_posts_misskey(parsed_url[1], post_server['webserver'])
+
+    log(f'server api unknown for {post_server["webserver"]}, cannot fetch user posts')
+    return None
+
+def get_user_posts_mastodon(userName, webserver):
+    try:
+        user_id = get_user_id(webserver, userName)
+    except Exception as ex:
+        log(f"Error getting user ID for user {user['acct']}: {ex}")
+        return None
+
+    try:
+        url = f"https://{webserver}/api/v1/accounts/{user_id}/statuses?limit=40"
+        response = get(url)
+
+        if(response.status_code == 200):
+            return response.json()
+        elif response.status_code == 404:
+            raise Exception(
+                f"User {user['acct']} was not found on server {webserver}"
+            )
+        else:
+            raise Exception(
+                f"Error getting URL {url}. Status code: {response.status_code}"
+            )
+    except Exception as ex:
+        log(f"Error getting posts for user {user['acct']}: {ex}")
+        return None
+
+def get_user_posts_lemmy(userName, userUrl, webserver):
+    # community
+    if re.match(r"^https:\/\/[^\/]+\/c\/", userUrl):
         try:
-            url = f"https://{parsed_url[0]}/api/v3/post/list?community_name={parsed_url[1]}&sort=New&limit=50"
+            url = f"https://{webserver}/api/v3/post/list?community_name={userName}&sort=New&limit=50"
             response = get(url)
 
             if(response.status_code == 200):
@@ -127,12 +172,13 @@ def get_user_posts(user, know_followings, server):
                 return posts
 
         except Exception as ex:
-            log(f"Error getting community posts for community {parsed_url[1]}: {ex}")
+            log(f"Error getting community posts for community {userName}: {ex}")
         return None
-    
-    if re.match(r"^https:\/\/[^\/]+\/u\/", user['url']):
+
+    # user
+    if re.match(r"^https:\/\/[^\/]+\/u\/", userUrl):
         try:
-            url = f"https://{parsed_url[0]}/api/v3/user?username={parsed_url[1]}&sort=New&limit=50"
+            url = f"https://{webserver}/api/v3/user?username={userName}&sort=New&limit=50"
             response = get(url)
 
             if(response.status_code == 200):
@@ -144,84 +190,51 @@ def get_user_posts(user, know_followings, server):
                 return all_posts
             
         except Exception as ex:
-            log(f"Error getting user posts for user {parsed_url[1]}: {ex}")
-        return None
-    
-    try:
-        user_id = get_user_id(parsed_url[0], parsed_url[1])
-    except Exception as ex:
-        log(f"Error getting user ID for user {user['acct']}: {ex}")
-
-        ## HACK HACK HACK: in the future actually try to detect the correct APIs to use at runtime
-        log('trying misskey')
-
-        return get_user_posts_misskey(user, know_followings, parsed_url[0])
-    
-    try:
-        url = f"https://{parsed_url[0]}/api/v1/accounts/{user_id}/statuses?limit=40"
-        response = get(url)
-
-        if(response.status_code == 200):
-            return response.json()
-        elif response.status_code == 404:
-            raise Exception(
-                f"User {user['acct']} was not found on server {parsed_url[0]}"
-            )
-        else:
-            raise Exception(
-                f"Error getting URL {url}. Status code: {response.status_code}"
-            )
-    except Exception as ex:
-        log(f"Error getting posts for user {user['acct']}: {ex}")
+            log(f"Error getting user posts for user {userName}: {ex}")
         return None
 
-def get_user_posts_misskey(user, know_followings, server):
+def get_user_posts_misskey(userName, webserver):
     # query user info via search api
     # we could filter by host but there's no way to limit that to just the main host on firefish currently
     # on misskey it works if you supply '.' as the host but firefish does not
-    url = f'https://{server}/api/users/search-by-username-and-host'
+    userId = None
     try:
-        resp = post(url, { 'username': user['username'] })
-    except Exception as ex:
-        log(f"Error finding user {user['username']} from {server}. Exception: {ex}")
-        return None
+        url = f'https://{webserver}/api/users/search-by-username-and-host'
+        resp = post(url, { 'username': userName })
 
-    if resp.status_code == 200:
-        try:
+        if resp.status_code == 200:
             res = resp.json()
             for user in res:
                 if user['host'] is None:
                     userId = user['id']
                     break
-            if userId is None:
-                raise Exception('user not found on server in search')
-        except Exception as ex:
-            log(f"Error finding user {user['username']} from {server}. Exception: {ex}")
+        else:
+            log(f"Error finding user {userName} from {webserver}. Status Code: {resp.status_code}")
             return None
-    else:
-        log(f"Error finding user {user['username']} from {server}. Status Code: {resp.status_code}")
-        return None
-
-    url = f'https://{server}/api/users/notes'
-    try:
-        resp = post(url, { 'userId': userId, 'limit': 40 })
     except Exception as ex:
-        log(f"Error getting posts by user {user['username']} from {server}. Exception: {ex}")
+        log(f"Error finding user {userName} from {webserver}. Exception: {ex}")
         return None
 
-    if resp.status_code == 200:
-        try:
+    if userId is None:
+        log(f'Error finding user {userName} from {webserver}: user not found on server in search')
+        return None
+
+    try:
+        url = f'https://{webserver}/api/users/notes'
+        resp = post(url, { 'userId': userId, 'limit': 40 })
+
+        if resp.status_code == 200:
             notes = resp.json()
             for note in notes:
                 if note.get('url') is None:
                     # add this to make it look like Mastodon status objects
-                    note.update({ 'url': f"https://{server}/notes/{note['id']}" })
+                    note.update({ 'url': f"https://{webserver}/notes/{note['id']}" })
             return notes
-        except Exception as ex:
-            log(f"Error getting posts by user {user['username']} from {server}. Exception: {ex}")
+        else:
+            log(f"Error getting posts by user {userName} from {webserver}. Status Code: {resp.status_code}")
             return None
-    else:
-        log(f"Error getting posts by user {user['username']} from {server}. Status Code: {resp.status_code}")
+    except Exception as ex:
+        log(f"Error getting posts by user {userName} from {webserver}. Exception: {ex}")
         return None
     
 
@@ -443,7 +456,7 @@ def get_reply_toots(user_id, server, access_token, seen_urls, reply_since):
     )
 
 
-def get_all_known_context_urls(server, reply_toots, parsed_urls):
+def get_all_known_context_urls(server, reply_toots, parsed_urls, seen_hosts):
     """get the context toots of the given toots from their original server"""
     known_context_urls = set()
     
@@ -451,7 +464,7 @@ def get_all_known_context_urls(server, reply_toots, parsed_urls):
         if toot_has_parseable_url(toot, parsed_urls):
             url = toot["url"] if toot["reblog"] is None else toot["reblog"]["url"]
             parsed_url = parse_url(url, parsed_urls)
-            context = get_toot_context(parsed_url[0], parsed_url[1], url)
+            context = get_toot_context(parsed_url[0], parsed_url[1], url, seen_hosts)
             if context is not None:
                 for item in context:
                     known_context_urls.add(item)
@@ -675,26 +688,37 @@ def get_redirect_url(url):
         return None
 
 
-def get_all_context_urls(server, replied_toot_ids):
+def get_all_context_urls(server, replied_toot_ids, seen_hosts):
     """get the URLs of the context toots of the given toots"""
     return filter(
         lambda url: not url.startswith(f"https://{server}/"),
         itertools.chain.from_iterable(
-            get_toot_context(server, toot_id, url)
+            get_toot_context(server, toot_id, url, seen_hosts)
             for (url, (server, toot_id)) in replied_toot_ids
         ),
     )
 
 
-def get_toot_context(server, toot_id, toot_url):
+def get_toot_context(server, toot_id, toot_url, seen_hosts):
     """get the URLs of the context toots of the given toot"""
-    if toot_url.find("/comment/") != -1:
-        return get_comment_context(server, toot_id, toot_url)
-    if toot_url.find("/post/") != -1:
-        return get_comments_urls(server, toot_id, toot_url)
-    if toot_url.find("/notes/") != -1:
-        return get_misskey_urls(server, toot_id, toot_url)
-    url = f"https://{server}/api/v1/statuses/{toot_id}/context"
+
+    post_server = get_server_info(server, seen_hosts)
+    if post_server is None:
+        log(f'server {server} not found for post')
+        return []
+
+    if post_server['mastodonApiSupport']:
+        return get_mastodon_urls(post_server['webserver'], toot_id, toot_url)
+    if post_server['lemmyApiSupport']:
+        return get_lemmy_urls(post_server['webserver'], toot_id, toot_url)
+    if post_server['misskeyApiSupport']:
+        return get_misskey_urls(post_server['webserver'], toot_id, toot_url)
+
+    log(f'unknown server api for {server}')
+    return []
+
+def get_mastodon_urls(webserver, toot_id, toot_url):
+    url = f"https://{webserver}/api/v1/statuses/{toot_id}/context"
     try:
         resp = get(url)
     except Exception as ex:
@@ -713,16 +737,25 @@ def get_toot_context(server, toot_id, toot_url):
         reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
         log(f"Rate Limit hit when getting context for {toot_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
         time.sleep((reset - datetime.now()).total_seconds() + 1)
-        return get_toot_context(server, toot_id, toot_url)
+        return get_toot_context(server, toot_id, toot_url, seen_hosts)
 
     log(
         f"Error getting context for toot {toot_url}. Status code: {resp.status_code}"
     )
     return []
 
-def get_comment_context(server, toot_id, toot_url):
+def get_lemmy_urls(webserver, toot_id, toot_url):
+    if toot_url.find("/comment/") != -1:
+        return get_lemmy_comment_context(webserver, toot_id, toot_url)
+    if toot_url.find("/post/") != -1:
+        return get_lemmy_comments_urls(webserver, toot_id, toot_url)
+    else:
+        log(f'unknown lemmy url type {toot_url}')
+        return []
+
+def get_lemmy_comment_context(webserver, toot_id, toot_url):
     """get the URLs of the context toots of the given toot"""
-    comment = f"https://{server}/api/v3/comment?id={toot_id}"
+    comment = f"https://{webserver}/api/v3/comment?id={toot_id}"
     try:
         resp = get(comment)
     except Exception as ex:
@@ -733,7 +766,7 @@ def get_comment_context(server, toot_id, toot_url):
         try:
             res = resp.json()
             post_id = res['comment_view']['comment']['post_id']
-            return get_comments_urls(server, post_id, toot_url)
+            return get_lemmy_comments_urls(webserver, post_id, toot_url)
         except Exception as ex:
             log(f"Error parsing context for comment {toot_url}. Exception: {ex}")
         return []
@@ -741,12 +774,12 @@ def get_comment_context(server, toot_id, toot_url):
         reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
         log(f"Rate Limit hit when getting context for {toot_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
         time.sleep((reset - datetime.now()).total_seconds() + 1)
-        return get_comment_context(server, toot_id, toot_url)
+        return get_lemmy_comment_context(webserver, toot_id, toot_url)
 
-def get_comments_urls(server, post_id, toot_url):
+def get_lemmy_comments_urls(webserver, post_id, toot_url):
     """get the URLs of the comments of the given post"""
     urls = []
-    url = f"https://{server}/api/v3/post?id={post_id}"
+    url = f"https://{webserver}/api/v3/post?id={post_id}"
     try:
         resp = get(url)
     except Exception as ex:
@@ -762,7 +795,7 @@ def get_comments_urls(server, post_id, toot_url):
         except Exception as ex:
             log(f"Error parsing post {post_id} from {toot_url}. Exception: {ex}")
 
-    url = f"https://{server}/api/v3/comment/list?post_id={post_id}&sort=New&limit=50"
+    url = f"https://{webserver}/api/v3/comment/list?post_id={post_id}&sort=New&limit=50"
     try:
         resp = get(url)
     except Exception as ex:
@@ -782,17 +815,18 @@ def get_comments_urls(server, post_id, toot_url):
         reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
         log(f"Rate Limit hit when getting comments for {toot_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
         time.sleep((reset - datetime.now()).total_seconds() + 1)
-        return get_comments_urls(server, post_id, toot_url)
+        return get_lemmy_comments_urls(webserver, post_id, toot_url)
 
     log(f"Error getting comments for post {toot_url}. Status code: {resp.status_code}")
     return []
 
-def get_misskey_urls(server, post_id, toot_url):
+def get_misskey_urls(webserver, post_id, toot_url):
     """get the URLs of the comments of a given misskey post"""
+
     urls = []
-    url = f"https://{server}/api/notes/children"
+    url = f"https://{webserver}/api/notes/children"
     try:
-        resp = post(url, { 'noteId': post_id })
+        resp = post(url, { 'noteId': post_id, 'limit': 100, 'depth': 12 })
     except Exception as ex:
         log(f"Error getting post {post_id} from {toot_url}. Exception: {ex}")
         return []
@@ -801,16 +835,16 @@ def get_misskey_urls(server, post_id, toot_url):
         try:
             res = resp.json()
             log(f"Got children for misskey post {toot_url}")
-            list_of_urls = [f'https://{server}/notes/{comment_info["id"]}' for comment_info in res]
+            list_of_urls = [f'https://{webserver}/notes/{comment_info["id"]}' for comment_info in res]
             urls.extend(list_of_urls)
         except Exception as ex:
             log(f"Error parsing post {post_id} from {toot_url}. Exception: {ex}")
     else:
         log(f"Error getting post {post_id} from {toot_url}. Status Code: {resp.status_code}")
 
-    url = f"https://{server}/api/notes/conversation"
+    url = f"https://{webserver}/api/notes/conversation"
     try:
-        resp = post(url, { 'noteId': post_id })
+        resp = post(url, { 'noteId': post_id, 'limit': 100 })
     except Exception as ex:
         log(f"Error getting post {post_id} from {toot_url}. Exception: {ex}")
         return []
@@ -819,7 +853,7 @@ def get_misskey_urls(server, post_id, toot_url):
         try:
             res = resp.json()
             log(f"Got conversation for misskey post {toot_url}")
-            list_of_urls = [f'https://{server}/notes/{comment_info["id"]}' for comment_info in res]
+            list_of_urls = [f'https://{webserver}/notes/{comment_info["id"]}' for comment_info in res]
             urls.extend(list_of_urls)
         except Exception as ex:
             log(f"Error parsing post {post_id} from {toot_url}. Exception: {ex}")
@@ -1037,7 +1071,7 @@ def get_server_from_host_meta(server):
     if resp.status_code == 200:
         try:
             hostMeta = ET.fromstring(resp.text)
-            lrdd = hostMeta.find(".//{http://docs.oasis-open.org/ns/xri/xrd-1.0}Link[@rel='lrdd']")
+            lrdd = hostMeta.find('.//{http://docs.oasis-open.org/ns/xri/xrd-1.0}Link[@rel="lrdd"]')
             url = lrdd.get('template')
             match = re.match(
                 r"https://(?P<server>[^/]+)/", url
@@ -1045,7 +1079,7 @@ def get_server_from_host_meta(server):
             if match is not None:
                 return match.group("server")
             else:
-                raise Exception('server not found in lrdd')
+                raise Exception(f'server not found in lrdd for {server}')
                 return None
         except Exception as ex:
             log(f'Error parsing host meta for {server}. Exception: {ex}')
@@ -1054,7 +1088,7 @@ def get_server_from_host_meta(server):
         log(f'Error getting host meta for {server}. Status Code: {resp.status_code}')
         return None
 
-def get_nodeinfo(server, host_meta_fallback = False):
+def get_nodeinfo(server, seen_hosts, host_meta_fallback = False):
     url = f'https://{server}/.well-known/nodeinfo'
     try:
         resp = get(url, timeout = 30)
@@ -1069,7 +1103,11 @@ def get_nodeinfo(server, host_meta_fallback = False):
         log(f'nodeinfo for {server} not found, checking host-meta')
         new_server = get_server_from_host_meta(server)
         if new_server is not None:
-            return get_nodeinfo(new_server, True)
+            if new_server == server:
+                log(f'host-meta for {server} did not get a new server.')
+                return None
+            else:
+                return get_nodeinfo(new_server, seen_hosts, True)
         else:
             return None
 
@@ -1085,22 +1123,28 @@ def get_nodeinfo(server, host_meta_fallback = False):
                     break
         except Exception as ex:
             log(f'error getting server {server} info from well-known node info. Exception: {ex}')
+            return None
     else:
         log(f'Error getting well-known host node info for {server}. Status Code: {resp.status_code}')
         return None
 
     if nodeLoc is None:
         log(f'could not find link to node info in well-known nodeinfo of {server}')
+        return None
 
     # regrab server from nodeLoc, again in the case of different display and web domains
-    try:
-        match = re.match(
-            r"https://(?P<server>[^/]+)/", nodeLoc
-        )
-        server = match.group('server')
-    except Exception as ex:
-        log(f"Error getting web server name from {server}. Exception: {ex}")
+    match = re.match(
+        r"https://(?P<server>[^/]+)/", nodeLoc
+    )
+    if match is None:
+        log(f"Error getting web server name from {server}.")
         return None
+
+    server = match.group('server')
+
+    # return early if the web domain has been seen previously (in cases with host-meta lookups)
+    if server in seen_hosts:
+        return seen_hosts[server]
 
     try:
         resp = get(nodeLoc, timeout = 30)
@@ -1118,40 +1162,46 @@ def get_nodeinfo(server, host_meta_fallback = False):
                 'webserver': server,
                 'software': nodeInfo['software']['name'],
                 'version': nodeInfo['software']['version'],
+                'rawnodeinfo': nodeInfo,
             }
         except Exception as ex:
             log(f'error getting server {server} info from nodeinfo. Exception: {ex}')
+            return None
     else:
         log(f'Error getting host node info for {server}. Status Code: {resp.status_code}')
         return None
-
-    return None
 
 def get_server_info(server, seen_hosts):
     if server in seen_hosts:
         return seen_hosts[server]
 
-    nodeinfo = get_nodeinfo(server)
+    nodeinfo = get_nodeinfo(server, seen_hosts)
     if nodeinfo is None:
         seen_hosts[server] = None
     else:
-        if nodeinfo['software'] in ['misskey', 'calckey', 'firefish']:
-            nodeinfo['supportsMisskeyApi'] = True
-        else:
-            nodeinfo['supportsMisskeyApi'] = False
-
+        set_server_apis(nodeinfo)
         seen_hosts[server] = nodeinfo
         if server is not nodeinfo['webserver']:
             seen_hosts[nodeinfo['webserver']] = nodeinfo
 
     return nodeinfo
 
-# arguments = argparser.parse_args()
-# seen_hosts = {}
-# test = get_server_info('mastodon.social', seen_hosts)
-# log(f'test: {test}')
-# log(f'seen_hosts: {seen_hosts}')
-# exit()
+def set_server_apis(server):
+    # support for new server software should be added here
+    software_apis = {
+        'mastodonApiSupport': ['mastodon', 'pleroma', 'akkoma', 'pixelfed', 'gotosocial', 'hometown'],
+        'misskeyApiSupport': ['misskey', 'calckey', 'firefish', 'foundkey'],
+        'lemmyApiSupport': ['lemmy']
+    }
+
+    for api, softwareList in software_apis.items():
+        server[api] = server['software'] in softwareList
+
+    # search `features` list in metadata if available
+    if 'metadata' in server['rawnodeinfo'] and 'features' in server['rawnodeinfo']['metadata'] and type(server['rawnodeinfo']['metadata']['features']) is list:
+        features = server['rawnodeinfo']['metadata']['features']
+        if 'mastodon_api' in features:
+            server['mastodonApiSupport'] = True
 
 if __name__ == "__main__":
     start = datetime.now()
@@ -1271,6 +1321,9 @@ if __name__ == "__main__":
 
         all_known_users = OrderedSet(list(known_followings) + list(recently_checked_users))
 
+        # NOTE: explicitly not cached in a file so we get server version upgrades or migrations to new software
+        seen_hosts = {}
+
         if(isinstance(arguments.access_token, str)):
             setattr(arguments, 'access_token', [arguments.access_token])
 
@@ -1283,19 +1336,19 @@ if __name__ == "__main__":
                 reply_toots = get_all_reply_toots(
                     arguments.server, user_ids, token, seen_urls, arguments.reply_interval_in_hours
                 )
-                known_context_urls = get_all_known_context_urls(arguments.server, reply_toots,parsed_urls)
+                known_context_urls = get_all_known_context_urls(arguments.server, reply_toots,parsed_urls, seen_hosts)
                 seen_urls.update(known_context_urls)
                 replied_toot_ids = get_all_replied_toot_server_ids(
                     arguments.server, reply_toots, replied_toot_server_ids, parsed_urls
                 )
-                context_urls = get_all_context_urls(arguments.server, replied_toot_ids)
+                context_urls = get_all_context_urls(arguments.server, replied_toot_ids, seen_hosts)
                 add_context_urls(arguments.server, token, context_urls, seen_urls)
 
 
             if arguments.home_timeline_length > 0:
                 """Do the same with any toots on the key owner's home timeline """
                 timeline_toots = get_timeline(arguments.server, token, arguments.home_timeline_length)
-                known_context_urls = get_all_known_context_urls(arguments.server, timeline_toots,parsed_urls)
+                known_context_urls = get_all_known_context_urls(arguments.server, timeline_toots,parsed_urls, seen_hosts)
                 add_context_urls(arguments.server, token, known_context_urls, seen_urls)
 
                 # Backfill any post authors, and any mentioned users
@@ -1317,40 +1370,40 @@ if __name__ == "__main__":
                             if user not in mentioned_users and user['acct'] not in all_known_users:
                                 mentioned_users.append(user)
 
-                    add_user_posts(arguments.server, token, filter_known_users(mentioned_users, all_known_users), recently_checked_users, all_known_users, seen_urls)
+                    add_user_posts(arguments.server, token, filter_known_users(mentioned_users, all_known_users), recently_checked_users, all_known_users, seen_urls, seen_hosts)
 
             if arguments.max_followings > 0:
                 log(f"Getting posts from last {arguments.max_followings} followings")
                 user_id = get_user_id(arguments.server, arguments.user, token)
                 followings = get_new_followings(arguments.server, user_id, arguments.max_followings, all_known_users)
-                add_user_posts(arguments.server, token, followings, known_followings, all_known_users, seen_urls)
+                add_user_posts(arguments.server, token, followings, known_followings, all_known_users, seen_urls, seen_hosts)
             
             if arguments.max_followers > 0:
                 log(f"Getting posts from last {arguments.max_followers} followers")
                 user_id = get_user_id(arguments.server, arguments.user, token)
                 followers = get_new_followers(arguments.server, user_id, arguments.max_followers, all_known_users)
-                add_user_posts(arguments.server, token, followers, recently_checked_users, all_known_users, seen_urls)
+                add_user_posts(arguments.server, token, followers, recently_checked_users, all_known_users, seen_urls, seen_hosts)
 
             if arguments.max_follow_requests > 0:
                 log(f"Getting posts from last {arguments.max_follow_requests} follow requests")
                 follow_requests = get_new_follow_requests(arguments.server, token, arguments.max_follow_requests, all_known_users)
-                add_user_posts(arguments.server, token, follow_requests, recently_checked_users, all_known_users, seen_urls)
+                add_user_posts(arguments.server, token, follow_requests, recently_checked_users, all_known_users, seen_urls, seen_hosts)
 
             if arguments.from_notifications > 0:
                 log(f"Getting notifications for last {arguments.from_notifications} hours")
                 notification_users = get_notification_users(arguments.server, token, all_known_users, arguments.from_notifications)
-                add_user_posts(arguments.server, token, notification_users, recently_checked_users, all_known_users, seen_urls)
+                add_user_posts(arguments.server, token, notification_users, recently_checked_users, all_known_users, seen_urls, seen_hosts)
 
             if arguments.max_bookmarks > 0:
                 log(f"Pulling replies to the last {arguments.max_bookmarks} bookmarks")
                 bookmarks = get_bookmarks(arguments.server, token, arguments.max_bookmarks)
-                known_context_urls = get_all_known_context_urls(arguments.server, bookmarks,parsed_urls)
+                known_context_urls = get_all_known_context_urls(arguments.server, bookmarks,parsed_urls, seen_hosts)
                 add_context_urls(arguments.server, token, known_context_urls, seen_urls)
 
             if arguments.max_favourites > 0:
                 log(f"Pulling replies to the last {arguments.max_favourites} favourites")
                 favourites = get_favourites(arguments.server, token, arguments.max_favourites)
-                known_context_urls = get_all_known_context_urls(arguments.server, favourites,parsed_urls)
+                known_context_urls = get_all_known_context_urls(arguments.server, favourites,parsed_urls, seen_hosts)
                 add_context_urls(arguments.server, token, known_context_urls, seen_urls)
 
         with open(KNOWN_FOLLOWINGS_FILE, "w", encoding="utf-8") as f:
