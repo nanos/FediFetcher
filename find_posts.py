@@ -1189,10 +1189,13 @@ def get_server_info(server, seen_hosts):
 def set_server_apis(server):
     # support for new server software should be added here
     software_apis = {
-        'mastodonApiSupport': ['mastodon', 'pleroma', 'akkoma', 'pixelfed', 'gotosocial', 'hometown'],
+        'mastodonApiSupport': ['mastodon', 'pleroma', 'akkoma', 'pixelfed', 'hometown'],
         'misskeyApiSupport': ['misskey', 'calckey', 'firefish', 'foundkey'],
         'lemmyApiSupport': ['lemmy']
     }
+
+    # software that has specific API support but is not compatible with FediFetcher for various reasons:
+    # * gotosocial - All Mastodon APIs require access token (https://github.com/superseriousbusiness/gotosocial/issues/2038)
 
     for api, softwareList in software_apis.items():
         server[api] = server['software'] in softwareList
