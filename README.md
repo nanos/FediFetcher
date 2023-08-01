@@ -82,10 +82,6 @@ When using a cronjob, we are using file based locking to avoid multiple overlapp
 > 
 > If you are running FediFetcher locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
 
-> **Note**
-> 
-> If you wish to run FediFetcher using Windows Task Scheduler, you can rename the script to the `.pyw` extension instead of `.py`, and it will run silently, without opening a console window.
-
 #### To run FediFetcher from a container:
 
 FediFetcher is also available in a pre-packaged container, [FediFetcher](https://github.com/nanos/FediFetcher/pkgs/container/fedifetcher) - Thank you [@nikdoof](https://github.com/nikdoof).
@@ -105,6 +101,10 @@ An [example Kubernetes CronJob](./examples/k8s-cronjob.yaml) for running the con
 
 FediFetcher has quite a few configuration options, so here is my quick configuration advice, that should probably work for most people:
 
+> **Warning**
+> 
+> **Do NOT** include your `access-token` in the `config.json` when running FediFetcher as GitHub Action. When running FediFetcher as GitHub Action **ALWAYS** [set the Access Token as an Action Secret](#to-run-fedifetcher-as-a-github-action).
+
 ```json
 {
   "access-token": "Your access token",
@@ -116,10 +116,6 @@ FediFetcher has quite a few configuration options, so here is my quick configura
 ```
 
 If you configure FediFetcher this way, it'll fetch missing remote replies to the last 200 posts in your home timeline. It'll additionally backfill profiles of the last 80 people you followed, and of every account who appeared in your notifications during the past hour.
-
-> **Warning**
-> 
-> **Do NOT** include your `access-token` in the `config.json` when running FediFetcher as GitHub Action. When running FediFetcher as GitHub Action **ALWAYS** [set the Access Token as an Action Secret](#to-run-fedifetcher-as-a-github-action).
 
 #### Advanced Options
 
