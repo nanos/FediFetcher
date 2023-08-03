@@ -738,7 +738,7 @@ def get_mastodon_urls(webserver, toot_id, toot_url):
         reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
         log(f"Rate Limit hit when getting context for {toot_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
         time.sleep((reset - datetime.now()).total_seconds() + 1)
-        return get_toot_context(server, toot_id, toot_url, seen_hosts)
+        return get_mastodon_urls(webserver, toot_id, toot_url)
 
     log(
         f"Error getting context for toot {toot_url}. Status code: {resp.status_code}"
