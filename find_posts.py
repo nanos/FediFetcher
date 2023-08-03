@@ -1089,7 +1089,7 @@ class OrderedSet:
         return len(self._dict)
     
     def toJSON(self):
-        return json.dump(self._dict, f, default=str)
+        return json.dumps(self._dict,default=str)
 
 def get_server_from_host_meta(server):
     url = f'https://{server}/.well-known/host-meta'
@@ -1468,7 +1468,7 @@ if __name__ == "__main__":
             json.dump(dict(list(replied_toot_server_ids.items())[-10000:]), f)
 
         with open(RECENTLY_CHECKED_USERS_FILE, "w", encoding="utf-8") as f:
-            recently_checked_users.toJSON()
+            f.write(recently_checked_users.toJSON())
 
         with open(SEEN_HOSTS_FILE, "w", encoding="utf-8") as f:
             f.write(seen_hosts.toJSON())
