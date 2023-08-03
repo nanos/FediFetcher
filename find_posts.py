@@ -30,6 +30,7 @@ argparser.add_argument('--max-bookmarks', required = False, type=int, default=0,
 argparser.add_argument('--max-favourites', required = False, type=int, default=0, help="Fetch remote replies to the API key owners Favourites. We'll fetch replies to at most this many favourites")
 argparser.add_argument('--from-notifications', required = False, type=int, default=0, help="Backfill accounts of anyone appearing in your notifications, during the last hours")
 argparser.add_argument('--remember-users-for-hours', required=False, type=int, default=24*7, help="How long to remember users that you aren't following for, before trying to backfill them again.")
+argparser.add_argument('--remember-hosts-for-days', required=False, type=int, default=30, help="How long to remember host info for, before checking again.")
 argparser.add_argument('--http-timeout', required = False, type=int, default=5, help="The timeout for any HTTP requests to your own, or other instances.")
 argparser.add_argument('--backfill-with-context', required = False, type=int, default=1, help="If enabled, we'll fetch remote replies when backfilling profiles. Set to `0` to disable.")
 argparser.add_argument('--backfill-mentioned-users', required = False, type=int, default=1, help="If enabled, we'll backfill any mentioned users when fetching remote replies to timeline posts. Set to `0` to disable.")
@@ -1016,6 +1017,36 @@ def post(url, json, headers = {}, timeout = 0, max_tries = 5):
 def log(text):
     print(f"{datetime.now()} {datetime.now().astimezone().tzinfo}: {text}")
 
+class ServerList:
+    def __init__(self, iterable):
+        self._dict = {}
+        for item in iterable:
+            if('last_checked' in iterable[item]):
+                iterable[item]['last_checked'] = parser.parse(iterable[item]['last_checked'])
+            self.add(item, iterable[item])
+
+    def add(self, key, item):
+        self._dict[key] = item
+
+    def get(self, key):
+        return self._dict[key]
+    
+    def pop(self,key):
+        return self._dict.pop(key)
+    
+    def __contains__(self, item):
+        return item in self._dict
+
+    def __iter__(self):
+        return iter(self._dict)
+
+    def __len__(self):
+        return len(self._dict)
+    
+    def toJSON(self):
+        return json.dumps(self._dict,default=str)
+
+
 class OrderedSet:
     """An ordered set implementation over a dict"""
 
@@ -1173,17 +1204,22 @@ def get_nodeinfo(server, seen_hosts, host_meta_fallback = False):
 
 def get_server_info(server, seen_hosts):
     if server in seen_hosts:
-        return seen_hosts[server]
+        serverInfo = seen_hosts.get(server)
+        if('info' in serverInfo and serverInfo['info'] == None):
+            return None
+        return serverInfo
 
     nodeinfo = get_nodeinfo(server, seen_hosts)
     if nodeinfo is None:
-        seen_hosts[server] = None
+        seen_hosts.add(server, {
+            'info': None,
+            'last_checked': datetime.now()
+        })
     else:
         set_server_apis(nodeinfo)
-        seen_hosts[server] = nodeinfo
+        seen_hosts.add(server, nodeinfo)
         if server is not nodeinfo['webserver']:
-            seen_hosts[nodeinfo['webserver']] = nodeinfo
-
+            seen_hosts.add(nodeinfo['webserver'], nodeinfo)
     return nodeinfo
 
 def set_server_apis(server):
@@ -1205,6 +1241,8 @@ def set_server_apis(server):
         features = server['rawnodeinfo']['metadata']['features']
         if 'mastodon_api' in features:
             server['mastodonApiSupport'] = True
+
+    server['last_checked'] = datetime.now()
 
 if __name__ == "__main__":
     start = datetime.now()
@@ -1325,12 +1363,18 @@ if __name__ == "__main__":
 
         all_known_users = OrderedSet(list(known_followings) + list(recently_checked_users))
 
-        # NOTE: explicitly not cached in a file so we get server version upgrades or migrations to new software
         if os.path.exists(SEEN_HOSTS_FILE):
             with open(SEEN_HOSTS_FILE, "r", encoding="utf-8") as f:
-                seen_hosts = json.load(f)
+                seen_hosts = ServerList(json.load(f))
+
+            for host in list(seen_hosts):
+                serverInfo = seen_hosts.get(host)
+                if 'last_checked' in serverInfo:
+                    serverAge = datetime.now(serverInfo['last_checked'].tzinfo) - serverInfo['last_checked']
+                    if(serverAge.total_seconds() > arguments.remember_hosts_for_days * 24 * 60 * 60 ):
+                        seen_hosts.pop(host)
         else:
-            seen_hosts = {}
+            seen_hosts = ServerList({})
 
         if(isinstance(arguments.access_token, str)):
             setattr(arguments, 'access_token', [arguments.access_token])
@@ -1427,7 +1471,7 @@ if __name__ == "__main__":
             recently_checked_users.toJSON()
 
         with open(SEEN_HOSTS_FILE, "w", encoding="utf-8") as f:
-            json.dump(seen_hosts, f)
+            f.write(seen_hosts.toJSON())
 
         os.remove(LOCK_FILE)
 
