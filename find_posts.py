@@ -1291,6 +1291,7 @@ if __name__ == "__main__":
         REPLIED_TOOT_SERVER_IDS_FILE = os.path.join(arguments.state_dir, "replied_toot_server_ids")
         KNOWN_FOLLOWINGS_FILE = os.path.join(arguments.state_dir, "known_followings")
         RECENTLY_CHECKED_USERS_FILE = os.path.join(arguments.state_dir, "recently_checked_users")
+        SEEN_HOSTS_FILE = os.path.join(arguments.state_dir, "seen_hosts")
 
 
         seen_urls = OrderedSet([])
@@ -1325,7 +1326,11 @@ if __name__ == "__main__":
         all_known_users = OrderedSet(list(known_followings) + list(recently_checked_users))
 
         # NOTE: explicitly not cached in a file so we get server version upgrades or migrations to new software
-        seen_hosts = {}
+        if os.path.exists(SEEN_HOSTS_FILE):
+            with open(SEEN_HOSTS_FILE, "r", encoding="utf-8") as f:
+                seen_hosts = json.load(f)
+        else:
+            seen_hosts = {}
 
         if(isinstance(arguments.access_token, str)):
             setattr(arguments, 'access_token', [arguments.access_token])
@@ -1420,6 +1425,9 @@ if __name__ == "__main__":
 
         with open(RECENTLY_CHECKED_USERS_FILE, "w", encoding="utf-8") as f:
             recently_checked_users.toJSON()
+
+        with open(SEEN_HOSTS_FILE, "w", encoding="utf-8") as f:
+            json.dump(seen_hosts, f)
 
         os.remove(LOCK_FILE)
 
