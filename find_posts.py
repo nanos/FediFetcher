@@ -1373,6 +1373,9 @@ if __name__ == "__main__":
                     serverAge = datetime.now(serverInfo['last_checked'].tzinfo) - serverInfo['last_checked']
                     if(serverAge.total_seconds() > arguments.remember_hosts_for_days * 24 * 60 * 60 ):
                         seen_hosts.pop(host)
+                    elif('info' in serverInfo and serverInfo['info'] == None and serverAge.total_seconds() > 60 * 60 ):
+                        # Don't cache failures for more than 24 hours
+                        seen_hosts.pop(host)
         else:
             seen_hosts = ServerList({})
 
