@@ -140,6 +140,7 @@ Option | Required? | Notes |
 |`backfill-with-context` | No | Set to `0` to disable fetching remote replies while backfilling profiles. This is enabled by default, but you can disable it, if it's too slow for you.
 |`backfill-mentioned-users` | No | Set to `0` to disable backfilling any mentioned users when fetching the home timeline. This is enabled by default, but you can disable it, if it's too slow for you.
 | `remember-users-for-hours` | No | How long between back-filling attempts for non-followed accounts? Defaults to `168`, i.e. one week.
+| `remember-hosts-for-days` | No | How long should FediFetcher cache host info for? Defaults to `30`.
 | `http-timeout` | No | The timeout for any HTTP requests to the Mastodon API in seconds. Defaults to `5`.
 | `lock-hours` | No | Determines after how many hours a lock file should be discarded. Not relevant when running the script as GitHub Action, as concurrency is prevented using a different mechanism. Recommended value: `24`.
 | `lock-file` | No | Location for the lock file. If not specified, will use `lock.lock` under the state directory. Not relevant when running the script as GitHub Action.
