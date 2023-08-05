@@ -9,3 +9,4 @@ requests==2.28.2
 six==1.16.0
 smmap==5.0.0
 urllib3==1.26.14
+defusedxml==0.7.1
