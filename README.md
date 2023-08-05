@@ -25,7 +25,7 @@ For detailed information on the how and why, please read the [FediFetcher for Ma
 
 FediFetcher makes use of the Mastodon API. It'll run against any instance implementing this API, and whilst it was built for Mastodon, it's been [confirmed working against Pleroma](https://fed.xnor.in/objects/6bd47928-704a-4cb8-82d6-87471d1b632f) as well.
 
-FediFetcher will pull in posts and profiles from any server that implements the Mastodon API, including Mastodon, Pleroma, Akkoma, Pixelfed, Lemmy, and probably others.
+FediFetcher will pull in posts and profiles from any servers running the following software: Mastodon, Pleroma, Akkoma, Pixelfed, Hometown, Misskey, Firefish (Calckey), Foundkey, and Lemmy.
 
 ## Setup
 
