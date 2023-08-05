@@ -734,11 +734,6 @@ def get_mastodon_urls(webserver, toot_id, toot_url):
         except Exception as ex:
             log(f"Error parsing context for toot {toot_url}. Exception: {ex}")
         return []
-    elif resp.status_code == 429:
-        reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
-        log(f"Rate Limit hit when getting context for {toot_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
-        time.sleep((reset - datetime.now()).total_seconds() + 1)
-        return get_mastodon_urls(webserver, toot_id, toot_url)
 
     log(
         f"Error getting context for toot {toot_url}. Status code: {resp.status_code}"
@@ -771,11 +766,6 @@ def get_lemmy_comment_context(webserver, toot_id, toot_url):
         except Exception as ex:
             log(f"Error parsing context for comment {toot_url}. Exception: {ex}")
         return []
-    elif resp.status_code == 429:
-        reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
-        log(f"Rate Limit hit when getting context for {toot_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
-        time.sleep((reset - datetime.now()).total_seconds() + 1)
-        return get_lemmy_comment_context(webserver, toot_id, toot_url)
 
 def get_lemmy_comments_urls(webserver, post_id, toot_url):
     """get the URLs of the comments of the given post"""
@@ -812,11 +802,6 @@ def get_lemmy_comments_urls(webserver, post_id, toot_url):
             return urls
         except Exception as ex:
             log(f"Error parsing comments for post {toot_url}. Exception: {ex}")
-    elif resp.status_code == 429:
-        reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
-        log(f"Rate Limit hit when getting comments for {toot_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
-        time.sleep((reset - datetime.now()).total_seconds() + 1)
-        return get_lemmy_comments_urls(webserver, post_id, toot_url)
 
     log(f"Error getting comments for post {toot_url}. Status code: {resp.status_code}")
     return []
@@ -902,11 +887,6 @@ def add_context_url(url, server, access_token):
             "Make sure you have the read:search scope enabled for your access token."
         )
         return False
-    elif resp.status_code == 429:
-        reset = datetime.strptime(resp.headers['x-ratelimit-reset'], '%Y-%m-%dT%H:%M:%S.%fZ')
-        log(f"Rate Limit hit when adding url {search_url}. Waiting to retry at {resp.headers['x-ratelimit-reset']}")
-        time.sleep((reset - datetime.now()).total_seconds() + 1)
-        return add_context_url(url, server, access_token)
     else:
         log(
             f"Error adding url {search_url} to server {server}. Status code: {resp.status_code}"
