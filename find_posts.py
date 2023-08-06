@@ -137,7 +137,7 @@ def get_user_posts_mastodon(userName, webserver):
     try:
         user_id = get_user_id(webserver, userName)
     except Exception as ex:
-        log(f"Error getting user ID for user {user['acct']}: {ex}")
+        log(f"Error getting user ID for user {userName}: {ex}")
         return None
 
     try:
@@ -148,14 +148,14 @@ def get_user_posts_mastodon(userName, webserver):
             return response.json()
         elif response.status_code == 404:
             raise Exception(
-                f"User {user['acct']} was not found on server {webserver}"
+                f"User {userName} was not found on server {webserver}"
             )
         else:
             raise Exception(
                 f"Error getting URL {url}. Status code: {response.status_code}"
             )
     except Exception as ex:
-        log(f"Error getting posts for user {user['acct']}: {ex}")
+        log(f"Error getting posts for user {userName}: {ex}")
         return None
 
 def get_user_posts_lemmy(userName, userUrl, webserver):
