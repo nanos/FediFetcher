@@ -12,7 +12,6 @@ import requests
 import time
 import argparse
 import uuid
-import git
 import defusedxml.ElementTree as ET
 
 argparser=argparse.ArgumentParser()
@@ -1247,16 +1246,7 @@ def set_server_apis(server):
 if __name__ == "__main__":
     start = datetime.now()
 
-    repo = git.Repo(os.getcwd())
-
-    tag = next((tag for tag in repo.tags if tag.commit == repo.head.commit), None)
-
-    if(isinstance(tag, git.TagReference)) :
-        version = tag.name
-    else:
-        version = f"on commit {repo.head.commit.name_rev}"
-
-    log(f"Starting FediFetcher {version}")
+    log(f"Starting FediFetcher")
 
     arguments = argparser.parse_args()
 
