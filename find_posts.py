@@ -1154,7 +1154,7 @@ def get_nodeinfo(server, seen_hosts, host_meta_fallback = False):
 
     # return early if the web domain has been seen previously (in cases with host-meta lookups)
     if server in seen_hosts:
-        return seen_hosts[server]
+        return seen_hosts.get(server)
 
     try:
         resp = get(nodeLoc, timeout = 30)
