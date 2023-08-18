@@ -14,7 +14,7 @@ spec:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: FediFetcher
+  name: fedifetcher
 spec:
   # Run every 2 hours
   schedule: "0 */2 * * *"
@@ -30,7 +30,7 @@ spec:
               persistentVolumeClaim:
                 claimName: fedifetcher-pvc
           containers:
-            - name: FediFetcher
+            - name: fedifetcher
               image: ghcr.io/nanos/fedifetcher:latest
               args:
                 - --server=your.server.social
