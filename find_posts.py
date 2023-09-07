@@ -1122,6 +1122,7 @@ def get_nodeinfo(server, seen_hosts, host_meta_fallback = False):
             return None
 
     if resp.status_code == 200:
+        nodeLoc = None
         try:
             nodeInfo = resp.json()
             for link in nodeInfo['links']:
