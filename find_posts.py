@@ -556,6 +556,11 @@ def parse_url(url, parsed_urls):
         match = parse_mastodon_url(url)
         if match is not None:
             parsed_urls[url] = match
+
+    if url not in parsed_urls:
+        match = parse_mastodon_uri(url)
+        if match is not None:
+            parsed_urls[url] = match
     
     if url not in parsed_urls:
         match = parse_pleroma_url(url)
@@ -601,6 +606,14 @@ def parse_mastodon_url(url):
         return (match.group("server"), match.group("toot_id"))
     return None
 
+def parse_mastodon_uri(uri):
+    """parse a Mastodon URI and return the server and ID"""
+    match = re.match(
+        r"https://(?P<server>[^/]+)/users/(?P<username>[^/]+)/statuses/(?P<toot_id>[^/]+)", uri
+    )
+    if match is not None:
+        return (match.group("server"), match.group("toot_id"))
+    return None
 
 def parse_pleroma_url(url):
     """parse a Pleroma URL and return the server and ID"""
@@ -1205,7 +1218,7 @@ def get_server_info(server, seen_hosts):
 def set_server_apis(server):
     # support for new server software should be added here
     software_apis = {
-        'mastodonApiSupport': ['mastodon', 'pleroma', 'akkoma', 'pixelfed', 'hometown'],
+        'mastodonApiSupport': ['mastodon', 'pleroma', 'akkoma', 'pixelfed', 'hometown', 'iceshrimp'],
         'misskeyApiSupport': ['misskey', 'calckey', 'firefish', 'foundkey'],
         'lemmyApiSupport': ['lemmy']
     }
