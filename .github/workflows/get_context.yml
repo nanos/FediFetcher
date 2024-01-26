@@ -32,12 +32,12 @@ jobs:
         run: ls -lR
       - run: python find_posts.py --lock-hours=0 --access-token=${{ secrets.ACCESS_TOKEN }} -c="./config.json"
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: artifacts
           path: |
             artifacts
       - name: Checkout user's forked repository for keeping workflow alive
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Keep workflow alive
         uses: gautamkrishnar/keepalive-workflow@v1
