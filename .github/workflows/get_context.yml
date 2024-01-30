@@ -32,7 +32,7 @@ jobs:
         run: ls -lR
       - run: python find_posts.py --lock-hours=0 --access-token=${{ secrets.ACCESS_TOKEN }} -c="./config.json"
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: artifacts
           path: |
