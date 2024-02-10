@@ -82,20 +82,16 @@ When using a cronjob, we are using file based locking to avoid multiple overlapp
 > 
 > If you are running FediFetcher locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
 
-#### To run FediFetcher from a container:
+#### To run FediFetcher from a docker container:
 
-FediFetcher is also available in a pre-packaged container, [FediFetcher](https://github.com/nanos/FediFetcher/pkgs/container/fedifetcher) - Thank you [@nikdoof](https://github.com/nikdoof).
-
-1. Pull the container from `ghcr.io`, using Docker or your container tool of choice: `docker pull ghcr.io/nanos/fedifetcher:latest`
-2. Run the container, passing the configurations options as command line arguments: `docker run -it ghcr.io/nanos/fedifetcher:latest --access-token=<TOKEN> --server=<SERVER>`
-
-> **Note**
-> 
-> The same rules for running this as a cron job apply to running the container: don't overlap any executions.
-
-Persistent files are stored in `/app/artifacts` within the container, so you may want to map this to a local folder on your system.
-
-An [example Kubernetes CronJob](./examples/k8s-cronjob.yaml) for running the container is included in the `examples` folder.
+```sh
+docker run -d \
+  --name fedifetcher \
+  --restart unless-stopped \
+  -e TZ=Europe/Bucharest \
+  -v /folder/containing/config_json:/app/config \
+  ghcr.io/rursache/fedifetcher:latest
+```
 
 ### Configuration options
 
