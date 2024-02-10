@@ -16,6 +16,7 @@ import defusedxml.ElementTree as ET
 
 argparser=argparse.ArgumentParser()
 
+argparser.add_argument('--sleep-interval', required = False, type=int, default=43200, help="The time to wait until it starts fetching again after a successful run")
 argparser.add_argument('-c','--config', required=False, type=str, help='Optionally provide a path to a JSON file containing configuration options. If not provided, options must be supplied using command line flags.')
 argparser.add_argument('--server', required=False, help="Required: The name of your server (e.g. `mstdn.thms.uk`)")
 argparser.add_argument('--access-token', action="append", required=False, help="Required: The access token can be generated at https://<server>/settings/applications, and must have read:search, read:statuses and admin:read:accounts scopes. You can supply this multiple times, if you want tun run it for multiple users.")
@@ -1237,7 +1238,7 @@ def set_server_apis(server):
 
     server['last_checked'] = datetime.now()
 
-if __name__ == "__main__":
+def main():
     start = datetime.now()
 
     log(f"Starting FediFetcher")
@@ -1469,6 +1470,8 @@ if __name__ == "__main__":
                 log(f"Error getting callback url: {ex}")
 
         log(f"Processing finished in {datetime.now() - start}.")
+        
+        return arguments.sleep_interval
 
     except Exception as ex:
         os.remove(LOCK_FILE)
@@ -1479,3 +1482,10 @@ if __name__ == "__main__":
             except Exception as ex:
                 log(f"Error getting callback url: {ex}")
         raise
+
+if __name__ == "__main__":
+    while True:
+        sleep_interval = int(main())
+        
+        log(f"Waiting for {sleep_interval} seconds until the next run")
+        time.sleep(sleep_interval)
