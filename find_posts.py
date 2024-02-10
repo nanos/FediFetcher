@@ -16,7 +16,6 @@ import defusedxml.ElementTree as ET
 
 argparser=argparse.ArgumentParser()
 
-argparser.add_argument('--sleep-interval', required = False, type=int, default=43200, help="The time to wait until it starts fetching again after a successful run")
 argparser.add_argument('-c','--config', required=False, type=str, help='Optionally provide a path to a JSON file containing configuration options. If not provided, options must be supplied using command line flags.')
 argparser.add_argument('--server', required=False, help="Required: The name of your server (e.g. `mstdn.thms.uk`)")
 argparser.add_argument('--access-token', action="append", required=False, help="Required: The access token can be generated at https://<server>/settings/applications, and must have read:search, read:statuses and admin:read:accounts scopes. You can supply this multiple times, if you want tun run it for multiple users.")
@@ -40,6 +39,9 @@ argparser.add_argument('--state-dir', required = False, default="artifacts", hel
 argparser.add_argument('--on-done', required = False, default=None, help="Provide a url that will be pinged when processing has completed. You can use this for 'dead man switch' monitoring of your task")
 argparser.add_argument('--on-start', required = False, default=None, help="Provide a url that will be pinged when processing is starting. You can use this for 'dead man switch' monitoring of your task")
 argparser.add_argument('--on-fail', required = False, default=None, help="Provide a url that will be pinged when processing has failed. You can use this for 'dead man switch' monitoring of your task")
+argparser.add_argument('--sleep-interval', required = False, type=int, default=43200, help="The time to wait until it starts fetching again after a successful run")
+
+arguments = argparser.parse_args()
 
 def get_notification_users(server, access_token, known_users, max_age):
     since = datetime.now(datetime.now().astimezone().tzinfo) - timedelta(hours=max_age)
@@ -1239,11 +1241,11 @@ def set_server_apis(server):
     server['last_checked'] = datetime.now()
 
 def main():
+    global arguments
+    
     start = datetime.now()
 
     log(f"Starting FediFetcher")
-
-    arguments = argparser.parse_args()
 
     if(arguments.config != None):
         if os.path.exists(arguments.config):
@@ -1470,8 +1472,6 @@ def main():
                 log(f"Error getting callback url: {ex}")
 
         log(f"Processing finished in {datetime.now() - start}.")
-        
-        return arguments.sleep_interval
 
     except Exception as ex:
         os.remove(LOCK_FILE)
@@ -1485,7 +1485,8 @@ def main():
 
 if __name__ == "__main__":
     while True:
-        sleep_interval = int(main())
-        
+        main()
+    
+        sleep_interval = arguments.sleep_interval
         log(f"Waiting for {sleep_interval} seconds until the next run")
         time.sleep(sleep_interval)
