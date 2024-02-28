@@ -97,6 +97,8 @@ Persistent files are stored in `/app/artifacts` within the container, so you may
 
 An [example Kubernetes CronJob](./examples/k8s-cronjob.yaml) for running the container is included in the `examples` folder.
 
+An [example Docker Compose Script](./examples/docker-compose.yaml) for running the container periodically is included in the `examples` folder.
+
 ### Configuration options
 
 FediFetcher has quite a few configuration options, so here is my quick configuration advice, that should probably work for most people:
