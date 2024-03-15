@@ -61,10 +61,10 @@ Run FediFetcher as a GitHub Action, a cron job, or a container:
    2.  Click New Repository Secret
    3.  Supply the Name `ACCESS_TOKEN` and provide the Token generated above as Secret
 3. Create a file called `config.json` with your [configuration options](#configuration-options) in the repository root. **Do NOT include the Access Token in your `config.json`!**
-4. Finally go to the Actions tab and enable the action. The action should now automatically run approximately once every 10 min. 
+4. Finally go to the Actions tab and enable the action. The action should now automatically run approximately once every 10 min.
 
 > **Note**
-> 
+>
 > Keep in mind that [the schedule event can be delayed during periods of high loads of GitHub Actions workflow runs](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule).
 
 #### To run FediFetcher as a cron job:
@@ -73,13 +73,13 @@ Run FediFetcher as a GitHub Action, a cron job, or a container:
 2. Install requirements: `pip install -r requirements.txt`
 3. Create a `json` file with [your configuration options](#configuration-options). You may wish to store this in the `./artifacts` directory, as that directory is `.gitignore`d
 4. Then simply run this script like so: `python find_posts.py -c=./artifacts/config.json`.
- 
+
 If desired, all configuration options can be provided as command line flags, instead of through a JSON file. An [example script](./examples/FediFetcher.sh) can be found in the `examples` folder.
 
 When using a cronjob, we are using file based locking to avoid multiple overlapping executions of the script. The timeout period for the lock can be configured using `lock-hours`.
 
 > **Note**
-> 
+>
 > If you are running FediFetcher locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
 
 #### To run FediFetcher from a container:
@@ -90,7 +90,7 @@ FediFetcher is also available in a pre-packaged container, [FediFetcher](https:/
 2. Run the container, passing the configurations options as command line arguments: `docker run -it ghcr.io/nanos/fedifetcher:latest --access-token=<TOKEN> --server=<SERVER>`
 
 > **Note**
-> 
+>
 > The same rules for running this as a cron job apply to running the container: don't overlap any executions.
 
 Persistent files are stored in `/app/artifacts` within the container, so you may want to map this to a local folder on your system.
@@ -99,12 +99,16 @@ An [example Kubernetes CronJob](./examples/k8s-cronjob.yaml) for running the con
 
 An [example Docker Compose Script](./examples/docker-compose.yaml) for running the container periodically is included in the `examples` folder.
 
+#### To run FediFetcher with systemd-timer:
+
+See [systemd.md](./examples/systemd.md)
+
 ### Configuration options
 
 FediFetcher has quite a few configuration options, so here is my quick configuration advice, that should probably work for most people:
 
 > **Warning**
-> 
+>
 > **Do NOT** include your `access-token` in the `config.json` when running FediFetcher as GitHub Action. When running FediFetcher as GitHub Action **ALWAYS** [set the Access Token as an Action Secret](#to-run-fedifetcher-as-a-github-action).
 
 ```json
@@ -149,7 +153,7 @@ Option | Required? | Notes |
 
 ### Multi User support
 
-If you wish to [run FediFetcher for multiple users on your instance](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher?utm_source=github), you can supply the `access-token` as an array, with different access tokens for different users. That will allow you to fetch replies and/or backfill profiles for multiple users on your account. 
+If you wish to [run FediFetcher for multiple users on your instance](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher?utm_source=github), you can supply the `access-token` as an array, with different access tokens for different users. That will allow you to fetch replies and/or backfill profiles for multiple users on your account.
 
 This is only supported when running FediFetcher as cron job, or container. Multi-user support is not available when running FediFetcher as GitHub Action.
 
@@ -157,7 +161,7 @@ This is only supported when running FediFetcher as cron job, or container. Multi
 
  - For all actions, your access token must include these scopes:
    - `read:search`
-   - `read:statuses` 
+   - `read:statuses`
    - `read:accounts`
  - If you are supplying `reply-interval-in-hours` you must additionally enable this scope:
    - `admin:read:accounts`
