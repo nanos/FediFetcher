@@ -77,6 +77,11 @@
     WantedBy=timers.target
     ```
 
+    Explanation:
+    - `OnCalendar`: This option defines when the timer should elapse. The format is `YYYY-MM-DD HH:MM:SS`. `*-*-* *:00:00` means every hour, `*-*-* *:*:00` means at the start of every minute. So, the timer will trigger every minute. [More informations](https://silentlad.com/systemd-timers-oncalendar-(cron)-format-explained).
+    - `Persistent=true`: This option ensures that if the system is unable to trigger the timer at the specified time (e.g., if the system is asleep or powered off), it will run the missed events when the system is next awake or powered on.
+    - `WantedBy=timers.target`: This specifies that the timer should be enabled when the `timers.target` is active, which is usually during system startup.
+
 12. Reload the systemd daemon configuration:
     ```bash
     systemctl daemon-reload
