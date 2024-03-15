@@ -23,7 +23,7 @@ For detailed information on the how and why, please read the [FediFetcher for Ma
 
 ## Supported servers
 
-FediFetcher makes use of the Mastodon API. It'll run against any instance implementing this API, and whilst it was built for Mastodon, it's been [confirmed working against Pleroma](https://fed.xnor.in/objects/6bd47928-704a-4cb8-82d6-87471d1b632f) as well.
+FediFetcher makes use of the Mastodon API. It'll run against any instance implementing this API, and whilst it was built for Mastodon, it's been [confirmed working against Pleroma](https://fed.xnor.in/objects/6bd47928-704a-4cb8-82d6-87471d1b632f) as well. Firefish and forks from that project, such as Iceshrimp and Sharkey, also implement the Mastodon API and work with this tool.
 
 FediFetcher will pull in posts and profiles from any servers running the following software: Mastodon, Pleroma, Akkoma, Pixelfed, Hometown, Misskey, Firefish (Calckey), Foundkey, and Lemmy.
 
@@ -42,6 +42,11 @@ Regardless of how you want to run FediFetcher, you must first get an access toke
    2. Enable the required scopes for your options. You could tick `read` and `admin:read:accounts`, or see below for a list of which scopes are required for which options.
    3. Save
    4. Copy the value of `Your access token`
+
+> **Note**
+> 
+> Iceshrimp requires the use of the OAuth2 access key, so you will need to go through the OAuth steps
+> Steps for the are [outlined in the Mastodon documents](https://docs.joinmastodon.org/spec/oauth/)
 
 #### If you are not an Admin on your Instance
 
