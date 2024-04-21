@@ -5,6 +5,7 @@ import string
 from dateutil import parser
 import itertools
 import json
+import logging
 import os
 import re
 import sys
@@ -14,9 +15,12 @@ import argparse
 import uuid
 import defusedxml.ElementTree as ET
 
+logger = logging.getLogger("FediFetcher")
+
 argparser=argparse.ArgumentParser()
 
 argparser.add_argument('-c','--config', required=False, type=str, help='Optionally provide a path to a JSON file containing configuration options. If not provided, options must be supplied using command line flags.')
+argparser.add_argument('--log-level', required=False, default="DEBUG", help="Severity of events to log (DEBUG|INFO|WARNING|ERROR|CRITICAL)")
 argparser.add_argument('--server', required=False, help="Required: The name of your server (e.g. `mstdn.thms.uk`)")
 argparser.add_argument('--access-token', action="append", required=False, help="Required: The access token can be generated at https://<server>/settings/applications, and must have read:search, read:statuses and admin:read:accounts scopes. You can supply this multiple times, if you want tun run it for multiple users.")
 argparser.add_argument('--reply-interval-in-hours', required = False, type=int, default=0, help="Fetch remote replies to posts that have received replies from users on your own instance in this period")
@@ -53,7 +57,7 @@ def get_notification_users(server, access_token, known_users, max_age):
 
     new_notification_users = filter_known_users(notification_users, known_users)
 
-    log(f"Found {len(notification_users)} users in notifications, {len(new_notification_users)} of which are new")
+    logger.info(f"Found {len(notification_users)} users in notifications, {len(new_notification_users)} of which are new")
 
     return new_notification_users
 
@@ -83,7 +87,7 @@ def add_user_posts(server, access_token, followings, known_followings, all_known
                             count += 1
                         else:
                             failed += 1
-                log(f"Added {count} posts for user {user['acct']} with {failed} errors")
+                logger.info(f"Added {count} posts for user {user['acct']} with {failed} errors")
                 if failed == 0:
                     known_followings.add(user['acct'])
                     all_known_users.add(user['acct'])
@@ -112,13 +116,13 @@ def get_user_posts(user, known_followings, server, seen_hosts):
         return None
     
     if(parsed_url[0] == server):
-        log(f"{user['acct']} is a local user. Skip")
+        logger.debug(f"{user['acct']} is a local user. Skip")
         known_followings.add(user['acct'])
         return None
 
     post_server = get_server_info(parsed_url[0], seen_hosts)
     if post_server is None:
-        log(f'server {parsed_url[0]} not found for post')
+        logger.error(f'server {parsed_url[0]} not found for post')
         return None
 
     if post_server['mastodonApiSupport']:
@@ -130,14 +134,14 @@ def get_user_posts(user, known_followings, server, seen_hosts):
     if post_server['misskeyApiSupport']:
         return get_user_posts_misskey(parsed_url[1], post_server['webserver'])
 
-    log(f'server api unknown for {post_server["webserver"]}, cannot fetch user posts')
+    logger.error(f'server api unknown for {post_server["webserver"]}, cannot fetch user posts')
     return None
 
 def get_user_posts_mastodon(userName, webserver):
     try:
         user_id = get_user_id(webserver, userName)
     except Exception as ex:
-        log(f"Error getting user ID for user {userName}: {ex}")
+        logger.error(f"Error getting user ID for user {userName}: {ex}")
         return None
 
     try:
@@ -155,7 +159,7 @@ def get_user_posts_mastodon(userName, webserver):
                 f"Error getting URL {url}. Status code: {response.status_code}"
             )
     except Exception as ex:
-        log(f"Error getting posts for user {userName}: {ex}")
+        logger.error(f"Error getting posts for user {userName}: {ex}")
         return None
 
 def get_user_posts_lemmy(userName, userUrl, webserver):
@@ -172,7 +176,7 @@ def get_user_posts_lemmy(userName, userUrl, webserver):
                 return posts
 
         except Exception as ex:
-            log(f"Error getting community posts for community {userName}: {ex}")
+            logger.error(f"Error getting community posts for community {userName}: {ex}")
         return None
 
     # user
@@ -190,7 +194,7 @@ def get_user_posts_lemmy(userName, userUrl, webserver):
                 return all_posts
             
         except Exception as ex:
-            log(f"Error getting user posts for user {userName}: {ex}")
+            logger.error(f"Error getting user posts for user {userName}: {ex}")
         return None
 
 def get_user_posts_misskey(userName, webserver):
@@ -209,14 +213,14 @@ def get_user_posts_misskey(userName, webserver):
                     userId = user['id']
                     break
         else:
-            log(f"Error finding user {userName} from {webserver}. Status Code: {resp.status_code}")
+            logger.error(f"Error finding user {userName} from {webserver}. Status Code: {resp.status_code}")
             return None
     except Exception as ex:
-        log(f"Error finding user {userName} from {webserver}. Exception: {ex}")
+        logger.error(f"Error finding user {userName} from {webserver}. Exception: {ex}")
         return None
 
     if userId is None:
-        log(f'Error finding user {userName} from {webserver}: user not found on server in search')
+        logger.error(f'Error finding user {userName} from {webserver}: user not found on server in search')
         return None
 
     try:
@@ -231,10 +235,10 @@ def get_user_posts_misskey(userName, webserver):
                     note.update({ 'url': f"https://{webserver}/notes/{note['id']}" })
             return notes
         else:
-            log(f"Error getting posts by user {userName} from {webserver}. Status Code: {resp.status_code}")
+            logger.error(f"Error getting posts by user {userName} from {webserver}. Status Code: {resp.status_code}")
             return None
     except Exception as ex:
-        log(f"Error getting posts by user {userName} from {webserver}. Exception: {ex}")
+        logger.error(f"Error getting posts by user {userName} from {webserver}. Exception: {ex}")
         return None
     
 
@@ -248,7 +252,7 @@ def get_new_follow_requests(server, access_token, max, known_followings):
     # Remove any we already know about    
     new_follow_requests = filter_known_users(follow_requests, known_followings)
     
-    log(f"Got {len(follow_requests)} follow_requests, {len(new_follow_requests)} of which are new")
+    logger.info(f"Got {len(follow_requests)} follow_requests, {len(new_follow_requests)} of which are new")
         
     return new_follow_requests
 
@@ -265,7 +269,7 @@ def get_new_followers(server, user_id, max, known_followers):
     # Remove any we already know about    
     new_followers = filter_known_users(followers, known_followers)
     
-    log(f"Got {len(followers)} followers, {len(new_followers)} of which are new")
+    logger.info(f"Got {len(followers)} followers, {len(new_followers)} of which are new")
         
     return new_followers
 
@@ -276,7 +280,7 @@ def get_new_followings(server, user_id, max, known_followings):
     # Remove any we already know about    
     new_followings = filter_known_users(following, known_followings)
     
-    log(f"Got {len(following)} followings, {len(new_followings)} of which are new")
+    logger.info(f"Got {len(following)} followings, {len(new_followings)} of which are new")
         
     return new_followings
     
@@ -341,10 +345,10 @@ def get_timeline(server, access_token, max):
             response = get_toots(response.links['next']['url'], access_token)
             toots = toots + response.json()
     except Exception as ex:
-        log(f"Error getting timeline toots: {ex}")
+        logger.error(f"Error getting timeline toots: {ex}")
         raise
 
-    log(f"Found {len(toots)} toots in timeline")
+    logger.info(f"Found {len(toots)} toots in timeline")
 
     return toots
     
@@ -384,7 +388,7 @@ def get_active_user_ids(server, access_token, reply_interval_hours):
             if last_status_at is not None:
                 last_active = datetime.strptime(last_status_at, "%Y-%m-%d")
                 if last_active > since:
-                    log(f"Found active user: {user['username']}")
+                    logger.info(f"Found active user: {user['username']}")
                     yield user["id"]
     elif resp.status_code == 401:
         raise Exception(
@@ -415,7 +419,7 @@ def get_all_reply_toots(
             for user_id in user_ids
         )
     )
-    log(f"Found {len(reply_toots)} reply toots")
+    logger.info(f"Found {len(reply_toots)} reply toots")
     return reply_toots
 
 
@@ -428,7 +432,7 @@ def get_reply_toots(user_id, server, access_token, seen_urls, reply_since):
             "Authorization": f"Bearer {access_token}",
         })
     except Exception as ex:
-        log(
+        logger.error(
             f"Error getting replies for user {user_id} on server {server}: {ex}"
         )
         return []
@@ -443,7 +447,7 @@ def get_reply_toots(user_id, server, access_token, seen_urls, reply_since):
             > reply_since
         ]
         for toot in toots:
-            log(f"Found reply toot: {toot['url']}")
+            logger.debug(f"Found reply toot: {toot['url']}")
         return toots
     elif resp.status_code == 403:
         raise Exception(
@@ -469,10 +473,10 @@ def get_all_known_context_urls(server, reply_toots, parsed_urls, seen_hosts):
                 for item in context:
                     known_context_urls.add(item)
             else:
-                log(f"Error getting context for toot {url}")
+                logger.error(f"Error getting context for toot {url}")
     
     known_context_urls = set(filter(lambda url: not url.startswith(f"https://{server}/"), known_context_urls))
-    log(f"Found {len(known_context_urls)} known context toots")
+    logger.info(f"Found {len(known_context_urls)} known context toots")
     
     return known_context_urls
 
@@ -525,7 +529,7 @@ def get_replied_toot_server_id(server, toot, replied_toot_server_ids,parsed_urls
         replied_toot_server_ids[o_url] = (url, match)
         return (url, match)
 
-    log(f"Error parsing toot URL {url}")
+    logger.error(f"Error parsing toot URL {url}")
     replied_toot_server_ids[o_url] = None
     return None
 
@@ -547,7 +551,7 @@ def parse_user_url(url):
     if match is not None:
         return match
 
-    log(f"Error parsing Profile URL {url}")
+    logger.error(f"Error parsing Profile URL {url}")
     
     return None
 
@@ -583,7 +587,7 @@ def parse_url(url, parsed_urls):
             parsed_urls[url] = match
 
     if url not in parsed_urls:
-        log(f"Error parsing toot URL {url}")
+        logger.error(f"Error parsing toot URL {url}")
         parsed_urls[url] = None
     
     return parsed_urls[url]
@@ -685,17 +689,17 @@ def get_redirect_url(url):
             'User-Agent': 'FediFetcher (https://go.thms.uk/mgr)'
         })
     except Exception as ex:
-        log(f"Error getting redirect URL for URL {url}. Exception: {ex}")
+        logger.error(f"Error getting redirect URL for URL {url}. Exception: {ex}")
         return None
 
     if resp.status_code == 200:
         return url
     elif resp.status_code == 302:
         redirect_url = resp.headers["Location"]
-        log(f"Discovered redirect for URL {url}")
+        logger.debug(f"Discovered redirect for URL {url}")
         return redirect_url
     else:
-        log(
+        logger.error(
             f"Error getting redirect URL for URL {url}. Status code: {resp.status_code}"
         )
         return None
@@ -717,7 +721,7 @@ def get_toot_context(server, toot_id, toot_url, seen_hosts):
 
     post_server = get_server_info(server, seen_hosts)
     if post_server is None:
-        log(f'server {server} not found for post')
+        logger.error(f'server {server} not found for post')
         return []
 
     if post_server['mastodonApiSupport']:
@@ -727,7 +731,7 @@ def get_toot_context(server, toot_id, toot_url, seen_hosts):
     if post_server['misskeyApiSupport']:
         return get_misskey_urls(post_server['webserver'], toot_id, toot_url)
 
-    log(f'unknown server api for {server}')
+    logger.error(f'unknown server api for {server}')
     return []
 
 def get_mastodon_urls(webserver, toot_id, toot_url):
@@ -735,19 +739,19 @@ def get_mastodon_urls(webserver, toot_id, toot_url):
     try:
         resp = get(url)
     except Exception as ex:
-        log(f"Error getting context for toot {toot_url}. Exception: {ex}")
+        logger.error(f"Error getting context for toot {toot_url}. Exception: {ex}")
         return []
 
     if resp.status_code == 200:
         try:
             res = resp.json()
-            log(f"Got context for toot {toot_url}")
+            logger.debug(f"Got context for toot {toot_url}")
             return (toot["url"] for toot in (res["ancestors"] + res["descendants"]))
         except Exception as ex:
-            log(f"Error parsing context for toot {toot_url}. Exception: {ex}")
+            logger.error(f"Error parsing context for toot {toot_url}. Exception: {ex}")
         return []
 
-    log(
+    logger.error(
         f"Error getting context for toot {toot_url}. Status code: {resp.status_code}"
     )
     return []
@@ -758,7 +762,7 @@ def get_lemmy_urls(webserver, toot_id, toot_url):
     if toot_url.find("/post/") != -1:
         return get_lemmy_comments_urls(webserver, toot_id, toot_url)
     else:
-        log(f'unknown lemmy url type {toot_url}')
+        logger.error(f'unknown lemmy url type {toot_url}')
         return []
 
 def get_lemmy_comment_context(webserver, toot_id, toot_url):
@@ -767,7 +771,7 @@ def get_lemmy_comment_context(webserver, toot_id, toot_url):
     try:
         resp = get(comment)
     except Exception as ex:
-        log(f"Error getting comment {toot_id} from {toot_url}. Exception: {ex}")
+        logger.error(f"Error getting comment {toot_id} from {toot_url}. Exception: {ex}")
         return []
     
     if resp.status_code == 200:
@@ -776,7 +780,7 @@ def get_lemmy_comment_context(webserver, toot_id, toot_url):
             post_id = res['comment_view']['comment']['post_id']
             return get_lemmy_comments_urls(webserver, post_id, toot_url)
         except Exception as ex:
-            log(f"Error parsing context for comment {toot_url}. Exception: {ex}")
+            logger.error(f"Error parsing context for comment {toot_url}. Exception: {ex}")
         return []
 
 def get_lemmy_comments_urls(webserver, post_id, toot_url):
@@ -786,7 +790,7 @@ def get_lemmy_comments_urls(webserver, post_id, toot_url):
     try:
         resp = get(url)
     except Exception as ex:
-        log(f"Error getting post {post_id} from {toot_url}. Exception: {ex}")
+        logger.error(f"Error getting post {post_id} from {toot_url}. Exception: {ex}")
         return []
 
     if resp.status_code == 200:
@@ -796,26 +800,26 @@ def get_lemmy_comments_urls(webserver, post_id, toot_url):
                 return []
             urls.append(res['post_view']['post']['ap_id'])
         except Exception as ex:
-            log(f"Error parsing post {post_id} from {toot_url}. Exception: {ex}")
+            logger.error(f"Error parsing post {post_id} from {toot_url}. Exception: {ex}")
 
     url = f"https://{webserver}/api/v3/comment/list?post_id={post_id}&sort=New&limit=50"
     try:
         resp = get(url)
     except Exception as ex:
-        log(f"Error getting comments for post {post_id} from {toot_url}. Exception: {ex}")
+        logger.error(f"Error getting comments for post {post_id} from {toot_url}. Exception: {ex}")
         return []
 
     if resp.status_code == 200:
         try:
             res = resp.json()
             list_of_urls = [comment_info['comment']['ap_id'] for comment_info in res['comments']]
-            log(f"Got {len(list_of_urls)} comments for post {toot_url}")
+            logger.debug(f"Got {len(list_of_urls)} comments for post {toot_url}")
             urls.extend(list_of_urls)
             return urls
         except Exception as ex:
-            log(f"Error parsing comments for post {toot_url}. Exception: {ex}")
+            logger.error(f"Error parsing comments for post {toot_url}. Exception: {ex}")
 
-    log(f"Error getting comments for post {toot_url}. Status code: {resp.status_code}")
+    logger.error(f"Error getting comments for post {toot_url}. Status code: {resp.status_code}")
     return []
 
 def get_misskey_urls(webserver, post_id, toot_url):
@@ -826,37 +830,37 @@ def get_misskey_urls(webserver, post_id, toot_url):
     try:
         resp = post(url, { 'noteId': post_id, 'limit': 100, 'depth': 12 })
     except Exception as ex:
-        log(f"Error getting post {post_id} from {toot_url}. Exception: {ex}")
+        logger.error(f"Error getting post {post_id} from {toot_url}. Exception: {ex}")
         return []
 
     if resp.status_code == 200:
         try:
             res = resp.json()
-            log(f"Got children for misskey post {toot_url}")
+            logger.debug(f"Got children for misskey post {toot_url}")
             list_of_urls = [f'https://{webserver}/notes/{comment_info["id"]}' for comment_info in res]
             urls.extend(list_of_urls)
         except Exception as ex:
-            log(f"Error parsing post {post_id} from {toot_url}. Exception: {ex}")
+            logger.error(f"Error parsing post {post_id} from {toot_url}. Exception: {ex}")
     else:
-        log(f"Error getting post {post_id} from {toot_url}. Status Code: {resp.status_code}")
+        logger.error(f"Error getting post {post_id} from {toot_url}. Status Code: {resp.status_code}")
 
     url = f"https://{webserver}/api/notes/conversation"
     try:
         resp = post(url, { 'noteId': post_id, 'limit': 100 })
     except Exception as ex:
-        log(f"Error getting post {post_id} from {toot_url}. Exception: {ex}")
+        logger.error(f"Error getting post {post_id} from {toot_url}. Exception: {ex}")
         return []
 
     if resp.status_code == 200:
         try:
             res = resp.json()
-            log(f"Got conversation for misskey post {toot_url}")
+            logger.debug(f"Got conversation for misskey post {toot_url}")
             list_of_urls = [f'https://{webserver}/notes/{comment_info["id"]}' for comment_info in res]
             urls.extend(list_of_urls)
         except Exception as ex:
-            log(f"Error parsing post {post_id} from {toot_url}. Exception: {ex}")
+            logger.error(f"Error parsing post {post_id} from {toot_url}. Exception: {ex}")
     else:
-        log(f"Error getting post {post_id} from {toot_url}. Status Code: {resp.status_code}")
+        logger.error(f"Error getting post {post_id} from {toot_url}. Status Code: {resp.status_code}")
 
     return urls
 
@@ -873,7 +877,7 @@ def add_context_urls(server, access_token, context_urls, seen_urls):
             else:
                 failed += 1
 
-    log(f"Added {count} new context toots (with {failed} failures)")
+    logger.info(f"Added {count} new context toots (with {failed} failures)")
 
 
 def add_context_url(url, server, access_token):
@@ -885,22 +889,22 @@ def add_context_url(url, server, access_token):
             "Authorization": f"Bearer {access_token}",
         })
     except Exception as ex:
-        log(
+        logger.error(
             f"Error adding url {search_url} to server {server}. Exception: {ex}"
         )
         return False
 
     if resp.status_code == 200:
-        log(f"Added context url {url}")
+        logger.debug(f"Added context url {url}")
         return True
     elif resp.status_code == 403:
-        log(
+        logger.error(
             f"Error adding url {search_url} to server {server}. Status code: {resp.status_code}. "
             "Make sure you have the read:search scope enabled for your access token."
         )
         return False
     else:
-        log(
+        logger.error(
             f"Error adding url {search_url} to server {server}. Status code: {resp.status_code}"
         )
         return False
@@ -977,7 +981,7 @@ def get(url, headers = {}, timeout = 0, max_tries = 5):
             reset = parser.parse(response.headers['x-ratelimit-reset'])
             now = datetime.now(datetime.now().astimezone().tzinfo)
             wait = (reset - now).total_seconds() + 1
-            log(f"Rate Limit hit requesting {url}. Waiting {wait} sec to retry at {response.headers['x-ratelimit-reset']}")
+            logger.warning(f"Rate Limit hit requesting {url}. Waiting {wait} sec to retry at {response.headers['x-ratelimit-reset']}")
             time.sleep(wait)
             return get(url, headers, timeout, max_tries - 1)
         
@@ -999,15 +1003,12 @@ def post(url, json, headers = {}, timeout = 0, max_tries = 5):
             reset = parser.parse(response.headers['x-ratelimit-reset'])
             now = datetime.now(datetime.now().astimezone().tzinfo)
             wait = (reset - now).total_seconds() + 1
-            log(f"Rate Limit hit requesting {url}. Waiting {wait} sec to retry at {response.headers['x-ratelimit-reset']}")
+            logger.warning(f"Rate Limit hit requesting {url}. Waiting {wait} sec to retry at {response.headers['x-ratelimit-reset']}")
             time.sleep(wait)
             return post(url, json, headers, timeout, max_tries - 1)
 
         raise Exception(f"Maximum number of retries exceeded for rate limited request {url}")
     return response
-
-def log(text):
-    print(f"{datetime.now()} {datetime.now().astimezone().tzinfo}: {text}")
 
 class ServerList:
     def __init__(self, iterable):
@@ -1088,7 +1089,7 @@ def get_server_from_host_meta(server):
     try:
         resp = get(url, timeout = 30)
     except Exception as ex:
-        log(f"Error getting host meta for {server}. Exception: {ex}")
+        logger.error(f"Error getting host meta for {server}. Exception: {ex}")
         return None
 
     if resp.status_code == 200:
@@ -1105,10 +1106,10 @@ def get_server_from_host_meta(server):
                 raise Exception(f'server not found in lrdd for {server}')
                 return None
         except Exception as ex:
-            log(f'Error parsing host meta for {server}. Exception: {ex}')
+            logger.error(f'Error parsing host meta for {server}. Exception: {ex}')
             return None
     else:
-        log(f'Error getting host meta for {server}. Status Code: {resp.status_code}')
+        logger.error(f'Error getting host meta for {server}. Status Code: {resp.status_code}')
         return None
 
 def get_nodeinfo(server, seen_hosts, host_meta_fallback = False):
@@ -1116,18 +1117,18 @@ def get_nodeinfo(server, seen_hosts, host_meta_fallback = False):
     try:
         resp = get(url, timeout = 30)
     except Exception as ex:
-        log(f"Error getting host node info for {server}. Exception: {ex}")
+        logger.error(f"Error getting host node info for {server}. Exception: {ex}")
         return None
 
     # if well-known nodeinfo isn't found, try to check host-meta for a webfinger URL
     # needed on servers where the display domain is different than the web domain
     if resp.status_code != 200 and not host_meta_fallback:
         # not found, try to check host-meta as a fallback
-        log(f'nodeinfo for {server} not found, checking host-meta')
+        logger.debug(f'nodeinfo for {server} not found, checking host-meta')
         new_server = get_server_from_host_meta(server)
         if new_server is not None:
             if new_server == server:
-                log(f'host-meta for {server} did not get a new server.')
+                logger.debug(f'host-meta for {server} did not get a new server.')
                 return None
             else:
                 return get_nodeinfo(new_server, seen_hosts, True)
@@ -1146,14 +1147,14 @@ def get_nodeinfo(server, seen_hosts, host_meta_fallback = False):
                     nodeLoc = link['href']
                     break
         except Exception as ex:
-            log(f'error getting server {server} info from well-known node info. Exception: {ex}')
+            logger.error(f'error getting server {server} info from well-known node info. Exception: {ex}')
             return None
     else:
-        log(f'Error getting well-known host node info for {server}. Status Code: {resp.status_code}')
+        logger.error(f'Error getting well-known host node info for {server}. Status Code: {resp.status_code}')
         return None
 
     if nodeLoc is None:
-        log(f'could not find link to node info in well-known nodeinfo of {server}')
+        logger.error(f'could not find link to node info in well-known nodeinfo of {server}')
         return None
 
     # regrab server from nodeLoc, again in the case of different display and web domains
@@ -1161,7 +1162,7 @@ def get_nodeinfo(server, seen_hosts, host_meta_fallback = False):
         r"https://(?P<server>[^/]+)/", nodeLoc
     )
     if match is None:
-        log(f"Error getting web server name from {server}.")
+        logger.error(f"Error getting web server name from {server}.")
         return None
 
     server = match.group('server')
@@ -1173,14 +1174,14 @@ def get_nodeinfo(server, seen_hosts, host_meta_fallback = False):
     try:
         resp = get(nodeLoc, timeout = 30)
     except Exception as ex:
-        log(f"Error getting host node info for {server}. Exception: {ex}")
+        logger.error(f"Error getting host node info for {server}. Exception: {ex}")
         return None
 
     if resp.status_code == 200:
         try:
             nodeInfo = resp.json()
             if 'activitypub' not in nodeInfo['protocols']:
-                log(f'server {server} does not support activitypub, skipping')
+                logger.warning(f'server {server} does not support activitypub, skipping')
                 return None
             return {
                 'webserver': server,
@@ -1189,10 +1190,10 @@ def get_nodeinfo(server, seen_hosts, host_meta_fallback = False):
                 'rawnodeinfo': nodeInfo,
             }
         except Exception as ex:
-            log(f'error getting server {server} info from nodeinfo. Exception: {ex}')
+            logger.error(f'error getting server {server} info from nodeinfo. Exception: {ex}')
             return None
     else:
-        log(f'Error getting host node info for {server}. Status Code: {resp.status_code}')
+        logger.error(f'Error getting host node info for {server}. Status Code: {resp.status_code}')
         return None
 
 def get_server_info(server, seen_hosts):
@@ -1240,9 +1241,13 @@ def set_server_apis(server):
 if __name__ == "__main__":
     start = datetime.now()
 
-    log(f"Starting FediFetcher")
-
     arguments = argparser.parse_args()
+
+    logging.basicConfig(
+        format=f"%(asctime)s.%(msecs)03d {time.strftime('%Z')}: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        level=arguments.log_level.upper(),
+    )
 
     if(arguments.config != None):
         if os.path.exists(arguments.config):
@@ -1252,12 +1257,16 @@ if __name__ == "__main__":
             for key in config:
                 setattr(arguments, key.lower().replace('-','_'), config[key])
 
+            logger.setLevel(arguments.log_level.upper())
+
         else:
-            log(f"Config file {arguments.config} doesn't exist")
+            logger.critical(f"Config file {arguments.config} doesn't exist")
             sys.exit(1)
 
+    logger.info(f"Starting FediFetcher")
+
     if(arguments.server == None or arguments.access_token == None):
-        log("You must supply at least a server name and an access token")
+        logger.critical("You must supply at least a server name and an access token")
         sys.exit(1)
 
     # in case someone provided the server name as url instead, 
@@ -1270,14 +1279,14 @@ if __name__ == "__main__":
         try:
             get(f"{arguments.on_start}?rid={runId}")
         except Exception as ex:
-            log(f"Error getting callback url: {ex}")
+            logger.error(f"Error getting callback url: {ex}")
 
     if arguments.lock_file is None:
         arguments.lock_file = os.path.join(arguments.state_dir, 'lock.lock')
     LOCK_FILE = arguments.lock_file
 
     if( os.path.exists(LOCK_FILE)):
-        log(f"Lock file exists at {LOCK_FILE}")
+        logger.debug(f"Lock file exists at {LOCK_FILE}")
 
         try:
             with open(LOCK_FILE, "r", encoding="utf-8") as f:
@@ -1285,23 +1294,23 @@ if __name__ == "__main__":
 
             if (datetime.now() - lock_time).total_seconds() >= arguments.lock_hours * 60 * 60: 
                 os.remove(LOCK_FILE)
-                log(f"Lock file has expired. Removed lock file.")
+                logger.debug(f"Lock file has expired. Removed lock file.")
             else:
-                log(f"Lock file age is {datetime.now() - lock_time} - below --lock-hours={arguments.lock_hours} provided.")
+                logger.critical(f"Lock file age is {datetime.now() - lock_time} - below --lock-hours={arguments.lock_hours} provided.")
                 if(arguments.on_fail != None and arguments.on_fail != ''):
                     try:
                         get(f"{arguments.on_fail}?rid={runId}")
                     except Exception as ex:
-                        log(f"Error getting callback url: {ex}")
+                        logger.error(f"Error getting callback url: {ex}")
                 sys.exit(1)
 
         except Exception:
-            log(f"Cannot read logfile age - aborting.")
+            logger.critical(f"Cannot read logfile age - aborting.")
             if(arguments.on_fail != None and arguments.on_fail != ''):
                 try:
                     get(f"{arguments.on_fail}?rid={runId}")
                 except Exception as ex:
-                    log(f"Error getting callback url: {ex}")
+                    logger.error(f"Error getting callback url: {ex}")
             sys.exit(1)
 
     with open(LOCK_FILE, "w", encoding="utf-8") as f:
@@ -1412,35 +1421,35 @@ if __name__ == "__main__":
                     add_user_posts(arguments.server, token, filter_known_users(mentioned_users, all_known_users), recently_checked_users, all_known_users, seen_urls, seen_hosts)
 
             if arguments.max_followings > 0:
-                log(f"Getting posts from last {arguments.max_followings} followings")
+                logger.info(f"Getting posts from last {arguments.max_followings} followings")
                 user_id = get_user_id(arguments.server, arguments.user, token)
                 followings = get_new_followings(arguments.server, user_id, arguments.max_followings, all_known_users)
                 add_user_posts(arguments.server, token, followings, known_followings, all_known_users, seen_urls, seen_hosts)
             
             if arguments.max_followers > 0:
-                log(f"Getting posts from last {arguments.max_followers} followers")
+                logger.info(f"Getting posts from last {arguments.max_followers} followers")
                 user_id = get_user_id(arguments.server, arguments.user, token)
                 followers = get_new_followers(arguments.server, user_id, arguments.max_followers, all_known_users)
                 add_user_posts(arguments.server, token, followers, recently_checked_users, all_known_users, seen_urls, seen_hosts)
 
             if arguments.max_follow_requests > 0:
-                log(f"Getting posts from last {arguments.max_follow_requests} follow requests")
+                logger.info(f"Getting posts from last {arguments.max_follow_requests} follow requests")
                 follow_requests = get_new_follow_requests(arguments.server, token, arguments.max_follow_requests, all_known_users)
                 add_user_posts(arguments.server, token, follow_requests, recently_checked_users, all_known_users, seen_urls, seen_hosts)
 
             if arguments.from_notifications > 0:
-                log(f"Getting notifications for last {arguments.from_notifications} hours")
+                logger.info(f"Getting notifications for last {arguments.from_notifications} hours")
                 notification_users = get_notification_users(arguments.server, token, all_known_users, arguments.from_notifications)
                 add_user_posts(arguments.server, token, notification_users, recently_checked_users, all_known_users, seen_urls, seen_hosts)
 
             if arguments.max_bookmarks > 0:
-                log(f"Pulling replies to the last {arguments.max_bookmarks} bookmarks")
+                logger.info(f"Pulling replies to the last {arguments.max_bookmarks} bookmarks")
                 bookmarks = get_bookmarks(arguments.server, token, arguments.max_bookmarks)
                 known_context_urls = get_all_known_context_urls(arguments.server, bookmarks,parsed_urls, seen_hosts)
                 add_context_urls(arguments.server, token, known_context_urls, seen_urls)
 
             if arguments.max_favourites > 0:
-                log(f"Pulling replies to the last {arguments.max_favourites} favourites")
+                logger.info(f"Pulling replies to the last {arguments.max_favourites} favourites")
                 favourites = get_favourites(arguments.server, token, arguments.max_favourites)
                 known_context_urls = get_all_known_context_urls(arguments.server, favourites,parsed_urls, seen_hosts)
                 add_context_urls(arguments.server, token, known_context_urls, seen_urls)
@@ -1466,16 +1475,16 @@ if __name__ == "__main__":
             try:
                 get(f"{arguments.on_done}?rid={runId}")
             except Exception as ex:
-                log(f"Error getting callback url: {ex}")
+                logger.error(f"Error getting callback url: {ex}")
 
-        log(f"Processing finished in {datetime.now() - start}.")
+        logger.info(f"Processing finished in {datetime.now() - start}.")
 
     except Exception as ex:
         os.remove(LOCK_FILE)
-        log(f"Job failed after {datetime.now() - start}.")
+        logger.error(f"Job failed after {datetime.now() - start}.")
         if(arguments.on_fail != None and arguments.on_fail != ''):
             try:
                 get(f"{arguments.on_fail}?rid={runId}")
             except Exception as ex:
-                log(f"Error getting callback url: {ex}")
+                logger.error(f"Error getting callback url: {ex}")
         raise
