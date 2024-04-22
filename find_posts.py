@@ -1243,6 +1243,7 @@ if __name__ == "__main__":
 
     arguments = argparser.parse_args()
 
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.basicConfig(
         format=f"%(asctime)s.%(msecs)03d {time.strftime('%Z')}: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
