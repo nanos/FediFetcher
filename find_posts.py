@@ -970,7 +970,11 @@ def get(url, headers = {}, timeout = 0, max_tries = 5):
     """A simple wrapper to make a get request while providing our user agent, and respecting rate limits"""
     h = headers.copy()
     if 'User-Agent' not in h:
-        h['User-Agent'] = 'FediFetcher (https://go.thms.uk/mgr)'
+        h['User-Agent'] = f"FediFetcher (+{arguments.server}; https://go.thms.uk/ff)"
+        logger.debug(f"User Agent: {h['User-Agent']}")
+
+
+    raise Exception('error')
 
     if timeout == 0:
         timeout = arguments.http_timeout
