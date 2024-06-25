@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 logger = logging.getLogger("FediFetcher")
 robotParser = urllib.robotparser.RobotFileParser()
 
-VERSION = "7.0.8"
+VERSION = "7.1.0"
 
 argparser=argparse.ArgumentParser()
 
