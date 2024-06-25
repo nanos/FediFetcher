@@ -1394,7 +1394,8 @@ if __name__ == "__main__":
             recently_checked_context[tootUrl]['created_at'] = parser.parse(recently_checked_context[tootUrl]['created_at'])
             lastSeen = recently_checked_context[tootUrl]['lastSeen']
             userAge = datetime.now(lastSeen.tzinfo) - lastSeen
-            if(userAge.total_seconds() > 30 * 60 * 60 * 60):
+            # dont really need to keep track for more than 7 days: if we haven't seen it in 7 days we can refetch content anyway
+            if(userAge.total_seconds() > 7 * 24 * 60 * 60):
                 recently_checked_users.pop(tootUrl)    
 
         parsed_urls = {}
