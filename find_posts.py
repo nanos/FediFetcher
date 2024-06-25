@@ -1008,10 +1008,22 @@ def get_paginated_mastodon(url, max, headers = {}, timeout = 0, max_tries = 5):
 def can_fetch(user_agent, url):
     parsed_uri = urlparse(url)
     robots = '{uri.scheme}://{uri.netloc}/robots.txt'.format(uri=parsed_uri)
+
+    try:
+        # We are getting the robots.txt manually from here, because otherwise 
+        robotsTxt = get(robots, ignore_robots_txt=True)
+        if robotsTxt.status_code in (401, 403):
+            return False
+        elif robotsTxt.status_code != 200:
+            return True
+        robotsTxt = robotsTxt.text
+    except Exception as ex:
+        return True
+    
     robotParser = urllib.robotparser.RobotFileParser()
-    robotParser.set_url(robots)
-    robotParser.read()
+    robotParser.parse(robotsTxt.splitlines())
     return robotParser.can_fetch(user_agent, url)
+
 
 def user_agent():
     return f"FediFetcher/{VERSION}; +{arguments.server} (https://go.thms.uk/ff)"
