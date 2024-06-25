@@ -1,2 +1,4 @@
 .vscode/launch.json
 artifacts/*
+venv
+.DS_Store
