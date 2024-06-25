@@ -465,8 +465,9 @@ def toot_context_should_be_fetched(toot):
         return True
     else:
         lastSeen = recently_checked_context[toot['uri']]['lastSeen']
+        createdAt = recently_checked_context[toot['uri']]['created_at']
         lastSeenInSeconds = (datetime.now(lastSeen.tzinfo) - lastSeen).total_seconds()
-        ageInSeconds = (datetime.now(lastSeen.tzinfo) - recently_checked_context[toot['uri']]['created_at']).total_seconds()
+        ageInSeconds = (datetime.now(createdAt.tzinfo) - createdAt).total_seconds()
         if(ageInSeconds <= 60 * 60):
             # For the first hour: allow refetching context as desired
             return True
