@@ -1009,16 +1009,25 @@ def can_fetch(user_agent, url):
     parsed_uri = urlparse(url)
     robots = '{uri.scheme}://{uri.netloc}/robots.txt'.format(uri=parsed_uri)
 
-    try:
-        # We are getting the robots.txt manually from here, because otherwise 
-        robotsTxt = get(robots, ignore_robots_txt=True)
-        if robotsTxt.status_code in (401, 403):
-            return False
-        elif robotsTxt.status_code != 200:
+    if robots in ROBOTS_TXT:
+        if isinstance(ROBOTS_TXT[robots], bool):
+            return ROBOTS_TXT[robots]
+        else:
+            robotsTxt = ROBOTS_TXT[robots]
+    else:
+        try:
+            # We are getting the robots.txt manually from here, because otherwise we can't change the User Agent
+            robotsTxt = get(robots, ignore_robots_txt=True)
+            if robotsTxt.status_code in (401, 403):
+                ROBOTS_TXT[robots] = False
+                return False
+            elif robotsTxt.status_code != 200:
+                ROBOTS_TXT[robots] = True
+                return True
+            robotsTxt = robotsTxt.text
+            ROBOTS_TXT[robots] = robotsTxt
+        except Exception as ex:
             return True
-        robotsTxt = robotsTxt.text
-    except Exception as ex:
-        return True
     
     robotParser = urllib.robotparser.RobotFileParser()
     robotParser.parse(robotsTxt.splitlines())
@@ -1394,6 +1403,7 @@ if __name__ == "__main__":
         SEEN_HOSTS_FILE = os.path.join(arguments.state_dir, "seen_hosts")
         RECENTLY_CHECKED_CONTEXTS_FILE = os.path.join(arguments.state_dir, 'recent_context')
 
+        ROBOTS_TXT = {}
 
         seen_urls = OrderedSet([])
         if os.path.exists(SEEN_URLS_FILE):
