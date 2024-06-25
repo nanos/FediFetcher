@@ -478,13 +478,13 @@ def toot_context_should_be_fetched(toot):
 
         lastSeenInSeconds = (datetime.now(lastSeen.tzinfo) - lastSeen).total_seconds()
         ageInSeconds = (datetime.now(createdAt.tzinfo) - createdAt).total_seconds()
-        if(ageInSeconds <= 60 * 60):
-            # For the first hour: allow refetching context as desired
+        if(ageInSeconds <= 60 * 60 and lastSeenInSeconds >= 60):
+            # For the first hour: allow refetching once per minute
             return True
-        if(ageInSeconds <= 24 * 60 * 60 and lastSeenInSeconds > 10 * 60):
-            # For the next day: once every 10 minutes
+        if(ageInSeconds <= 24 * 60 * 60 and lastSeenInSeconds >= 10 * 60):
+            # For the rest of the first day: once every 10 minutes
             return True
-        if(lastSeenInSeconds > 60 * 60):
+        if(lastSeenInSeconds >= 60 * 60):
             # After that: hourly
             return True
     return False    
