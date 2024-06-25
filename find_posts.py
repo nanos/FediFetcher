@@ -466,6 +466,11 @@ def toot_context_should_be_fetched(toot):
     else:
         lastSeen = recently_checked_context[toot['uri']]['lastSeen']
         createdAt = recently_checked_context[toot['uri']]['created_at']
+
+        # convert to date time, if needed
+        if isinstance(createdAt, str):
+            createdAt = parser.parse(createdAt)
+
         lastSeenInSeconds = (datetime.now(lastSeen.tzinfo) - lastSeen).total_seconds()
         ageInSeconds = (datetime.now(createdAt.tzinfo) - createdAt).total_seconds()
         if(ageInSeconds <= 60 * 60):
