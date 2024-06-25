@@ -1017,7 +1017,7 @@ def can_fetch(user_agent, url):
     else:
         try:
             # We are getting the robots.txt manually from here, because otherwise we can't change the User Agent
-            robotsTxt = get(robots, ignore_robots_txt=True)
+            robotsTxt = get(robots, timeout = 2, ignore_robots_txt=True)
             if robotsTxt.status_code in (401, 403):
                 ROBOTS_TXT[robots] = False
                 return False
