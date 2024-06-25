@@ -14,8 +14,13 @@ import time
 import argparse
 import uuid
 import defusedxml.ElementTree as ET
+import urllib.robotparser
+from urllib.parse import urlparse
 
 logger = logging.getLogger("FediFetcher")
+robotParser = urllib.robotparser.RobotFileParser()
+
+VERSION = "7.0.8"
 
 argparser=argparse.ArgumentParser()
 
@@ -1000,12 +1005,25 @@ def get_paginated_mastodon(url, max, headers = {}, timeout = 0, max_tries = 5):
                 break
     return result
 
+def can_fetch(user_agent, url):
+    parsed_uri = urlparse(url)
+    robots = '{uri.scheme}://{uri.netloc}/robots.txt'.format(uri=parsed_uri)
+    robotParser = urllib.robotparser.RobotFileParser()
+    robotParser.set_url(robots)
+    robotParser.read()
+    return robotParser.can_fetch(user_agent, url)
 
-def get(url, headers = {}, timeout = 0, max_tries = 5):
+def user_agent():
+    return f"FediFetcher/{VERSION}; +{arguments.server} (https://go.thms.uk/ff)"
+
+def get(url, headers = {}, timeout = 0, max_tries = 5, ignore_robots_txt = False):
     """A simple wrapper to make a get request while providing our user agent, and respecting rate limits"""
     h = headers.copy()
     if 'User-Agent' not in h:
-        h['User-Agent'] = f"FediFetcher (+{arguments.server}; https://go.thms.uk/ff)"
+        h['User-Agent'] = user_agent()
+
+    if not ignore_robots_txt and not can_fetch(h['User-Agent'], url):
+        raise Exception(f"Querying {url} prohibited by robots.txt")    
 
     if timeout == 0:
         timeout = arguments.http_timeout
@@ -1027,8 +1045,11 @@ def post(url, json, headers = {}, timeout = 0, max_tries = 5):
     """A simple wrapper to make a post request while providing our user agent, and respecting rate limits"""
     h = headers.copy()
     if 'User-Agent' not in h:
-        h['User-Agent'] = 'FediFetcher (https://go.thms.uk/mgr)'
+        h['User-Agent'] = user_agent()
 
+    if not can_fetch(h['User-Agent'], url):
+        raise Exception(f"Querying {url} prohibited by robots.txt")    
+    
     if timeout == 0:
         timeout = arguments.http_timeout
 
@@ -1313,7 +1334,7 @@ if __name__ == "__main__":
 
     if(arguments.on_start != None and arguments.on_start != ''):
         try:
-            get(f"{arguments.on_start}?rid={runId}")
+            get(f"{arguments.on_start}?rid={runId}", ignore_robots_txt = True)
         except Exception as ex:
             logger.error(f"Error getting callback url: {ex}")
 
@@ -1335,7 +1356,7 @@ if __name__ == "__main__":
                 logger.critical(f"Lock file age is {datetime.now() - lock_time} - below --lock-hours={arguments.lock_hours} provided.")
                 if(arguments.on_fail != None and arguments.on_fail != ''):
                     try:
-                        get(f"{arguments.on_fail}?rid={runId}")
+                        get(f"{arguments.on_fail}?rid={runId}", ignore_robots_txt = True)
                     except Exception as ex:
                         logger.error(f"Error getting callback url: {ex}")
                 sys.exit(1)
@@ -1344,7 +1365,7 @@ if __name__ == "__main__":
             logger.critical(f"Cannot read logfile age - aborting.")
             if(arguments.on_fail != None and arguments.on_fail != ''):
                 try:
-                    get(f"{arguments.on_fail}?rid={runId}")
+                    get(f"{arguments.on_fail}?rid={runId}", ignore_robots_txt = True)
                 except Exception as ex:
                     logger.error(f"Error getting callback url: {ex}")
             sys.exit(1)
@@ -1528,7 +1549,7 @@ if __name__ == "__main__":
 
         if(arguments.on_done != None and arguments.on_done != ''):
             try:
-                get(f"{arguments.on_done}?rid={runId}")
+                get(f"{arguments.on_done}?rid={runId}", ignore_robots_txt = True)
             except Exception as ex:
                 logger.error(f"Error getting callback url: {ex}")
 
@@ -1539,7 +1560,7 @@ if __name__ == "__main__":
         logger.error(f"Job failed after {datetime.now() - start}.")
         if(arguments.on_fail != None and arguments.on_fail != ''):
             try:
-                get(f"{arguments.on_fail}?rid={runId}")
+                get(f"{arguments.on_fail}?rid={runId}", ignore_robots_txt = True)
             except Exception as ex:
                 logger.error(f"Error getting callback url: {ex}")
         raise
