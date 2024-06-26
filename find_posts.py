@@ -1015,19 +1015,31 @@ def can_fetch(user_agent, url):
         else:
             robotsTxt = ROBOTS_TXT[robots]
     else:
-        try:
-            # We are getting the robots.txt manually from here, because otherwise we can't change the User Agent
-            robotsTxt = get(robots, timeout = 2, ignore_robots_txt=True)
-            if robotsTxt.status_code in (401, 403):
-                ROBOTS_TXT[robots] = False
-                return False
-            elif robotsTxt.status_code != 200:
-                ROBOTS_TXT[robots] = True
-                return True
-            robotsTxt = robotsTxt.text
+        robotsCachePath = os.path.join(arguments.state_dir, f'robots-{parsed_uri.netloc}')
+        if os.path.exists(robotsCachePath):
+            with open(robotsCachePath, "r", encoding="utf-8") as f:
+                logger.debug(f"Getting robots.text file from cache {file_name}")
+                robotsTxt = f.read()
             ROBOTS_TXT[robots] = robotsTxt
-        except Exception as ex:
-            return True
+
+        else:
+            try:
+                # We are getting the robots.txt manually from here, because otherwise we can't change the User Agent
+                robotsTxt = get(robots, timeout = 2, ignore_robots_txt=True)
+                if robotsTxt.status_code in (401, 403):
+                    ROBOTS_TXT[robots] = False
+                    return False
+                elif robotsTxt.status_code != 200:
+                    ROBOTS_TXT[robots] = True
+                    return True
+                robotsTxt = robotsTxt.text
+                ROBOTS_TXT[robots] = robotsTxt
+                
+                with open(robotsCachePath, "w", encoding="utf-8") as f:
+                    f.write(robotsTxt)
+
+            except Exception as ex:
+                return True
     
     robotParser = urllib.robotparser.RobotFileParser()
     robotParser.parse(robotsTxt.splitlines())
@@ -1466,6 +1478,15 @@ if __name__ == "__main__":
                         seen_hosts.pop(host)
         else:
             seen_hosts = ServerList({})
+
+        # Delete any old robots.txt files so we can re-download them
+        for file_name in os.listdir(arguments.state_dir):
+            file_path = os.path.join(arguments.state_dir,file_name)
+            if file_name.startswith('robots-') and os.path.isfile(file_path):
+                if os.path.getmtime(file_path) < time.time() - 60 * 60 * 24:
+                    logger.debug(f"Removing cached robots.text file {file_name}")
+                    os.remove(file_path)
+            
 
         if(isinstance(arguments.access_token, str)):
             setattr(arguments, 'access_token', [arguments.access_token])
