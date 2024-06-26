@@ -1018,7 +1018,7 @@ def can_fetch(user_agent, url):
         robotsCachePath = os.path.join(arguments.state_dir, f'robots-{parsed_uri.netloc}')
         if os.path.exists(robotsCachePath):
             with open(robotsCachePath, "r", encoding="utf-8") as f:
-                logger.debug(f"Getting robots.text file from cache {file_name}")
+                logger.debug(f"Getting robots.txt file from cache {parsed_uri.netloc}")
                 robotsTxt = f.read()
             ROBOTS_TXT[robots] = robotsTxt
 
@@ -1484,7 +1484,7 @@ if __name__ == "__main__":
             file_path = os.path.join(arguments.state_dir,file_name)
             if file_name.startswith('robots-') and os.path.isfile(file_path):
                 if os.path.getmtime(file_path) < time.time() - 60 * 60 * 24:
-                    logger.debug(f"Removing cached robots.text file {file_name}")
+                    logger.debug(f"Removing cached robots.txt file {file_name}")
                     os.remove(file_path)
             
 
