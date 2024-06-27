@@ -751,22 +751,13 @@ def get_redirect_url(url):
 
 def get_all_context_urls(server, replied_toot_ids, seen_hosts):
     """get the URLs of the context toots of the given toots"""
-    known_context_urls = set()
-    for (url, (server, toot_id)) in replied_toot_ids:
-        if(toot_context_should_be_fetched(toot)):
-            recently_checked_context[toot['uri']]['lastSeen'] = datetime.now(datetime.now().astimezone().tzinfo)
-            context = get_toot_context(server, toot_id, url, seen_hosts)
-            if context is not None:
-                for item in context:
-                    known_context_urls.add(item)
-            else:
-                logger.error(f"Error getting context for toot {url}")
-
-    known_context_urls = set(filter(lambda url: not url.startswith(f"https://{server}/"), known_context_urls))
-    
-    logger.info(f"Found {len(known_context_urls)} known context toots")
-    
-    return known_context_urls
+    return filter(
+        lambda url: not url.startswith(f"https://{server}/"),
+        itertools.chain.from_iterable(
+            get_toot_context(server, toot_id, url, seen_hosts)
+            for (url, (server, toot_id)) in replied_toot_ids
+        ),
+    )
 
 
 def get_toot_context(server, toot_id, toot_url, seen_hosts):
