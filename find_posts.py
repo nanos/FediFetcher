@@ -112,7 +112,19 @@ def add_post_with_context(post, server, access_token, seen_urls, seen_hosts):
     
     return False
 
+def user_has_opted_out(user):
+    if 'note' in user and isinstance(user['note'], str) and (' nobot' in user['note'].lower() or '/tags/nobot' in user['note'].lower()):
+        return True
+    if 'indexable' in user and not user['indexable']:
+        return True
+    if 'discoverable' in user and not user['discoverable']:
+        return True
+    return False
+        
+
 def get_user_posts(user, known_followings, server, seen_hosts):
+    if user_has_opted_out(user):
+        return None
     parsed_url = parse_user_url(user['url'])
 
     if parsed_url == None:
