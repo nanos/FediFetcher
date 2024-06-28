@@ -127,7 +127,7 @@ def user_has_opted_out(user):
 
 def get_user_posts(user, known_followings, server, seen_hosts):
     if user_has_opted_out(user):
-        logger.debug(f"User {user} has opted out of backfilling")
+        logger.debug(f"User {user['acct']} has opted out of backfilling")
         return None
     parsed_url = parse_user_url(user['url'])
 
