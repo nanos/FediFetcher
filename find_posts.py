@@ -48,6 +48,9 @@ argparser.add_argument('--state-dir', required = False, default="artifacts", hel
 argparser.add_argument('--on-done', required = False, default=None, help="Provide a url that will be pinged when processing has completed. You can use this for 'dead man switch' monitoring of your task")
 argparser.add_argument('--on-start', required = False, default=None, help="Provide a url that will be pinged when processing is starting. You can use this for 'dead man switch' monitoring of your task")
 argparser.add_argument('--on-fail', required = False, default=None, help="Provide a url that will be pinged when processing has failed. You can use this for 'dead man switch' monitoring of your task")
+argparser.add_argument('--from-lists', required=False, type=bool, default=False, help="Set to `1` to fetch missing replies and/or backfill account from your lists. This is disabled by default.")
+argparser.add_argument('--max-list-length', required=False, type=int, default=100, help="Determines how many posts we'll fetch replies for in each list. This will be ignored, unless you also provide `from-lists = 1`. Set to `0` if you only want to backfill profiles in lists.")
+argparser.add_argument('--max-list-accounts', required=False, type=int, default=10, help="Determines how many accounts we'll backfill for in each list. This will be ignored, unless you also provide `from-lists = 1`. Set to `0` if you only want to fetch replies in lists.")
 
 def get_notification_users(server, access_token, known_users, max_age):
     since = datetime.now(datetime.now().astimezone().tzinfo) - timedelta(hours=max_age)
@@ -330,7 +333,6 @@ def get_user_id(server, user = None, access_token = None):
         raise Exception(
             f"Error getting URL {url}. Status code: {response.status_code}"
         )
-
 
 def get_timeline(server, access_token, max):
     """Get all post in the user's home timeline"""
@@ -1331,6 +1333,33 @@ def set_server_apis(server):
 
     server['last_checked'] = datetime.now()
 
+def get_user_lists(server, token):
+    return get_paginated_mastodon(f"https://{server}/api/v1/lists", 99, {
+        "Authorization": f"Bearer {token}",
+    })
+
+def get_list_timeline(server, list, token, max):
+    """Get all post in the user's home timeline"""
+
+    url = f"https://{server}/api/v1/timelines/list/{list['id']}"
+
+    posts = get_paginated_mastodon(url, max, {
+        "Authorization": f"Bearer {token}",
+    })
+
+    logger.info(f"Found {len(posts)} toots in list {list['title']}")
+
+    return posts
+
+def get_list_users(server, list, token, max):
+    url = f"https://{server}/api/v1/lists/{list['id']}/accounts"
+    accounts = get_paginated_mastodon(url, max, {
+        "Authorization": f"Bearer {token}",
+    })
+    logger.info(f"Found {len(accounts)} accounts in list {list['title']}")
+    return accounts
+
+
 if __name__ == "__main__":
     start = datetime.now()
 
@@ -1496,6 +1525,21 @@ if __name__ == "__main__":
             setattr(arguments, 'access_token', [arguments.access_token])
 
         for token in arguments.access_token:
+
+            if arguments.from_lists:
+                """Pull replies from lists"""
+                lists = get_user_lists(arguments.server, token)
+                for list in lists:
+                    # Fill context from list
+                    if arguments.max_list_length > 0:
+                        timeline_toots = get_list_timeline(arguments.server, list, token, arguments.max_list_length)
+                        known_context_urls = get_all_known_context_urls(arguments.server, timeline_toots,parsed_urls, seen_hosts)
+                        add_context_urls(arguments.server, token, known_context_urls, seen_urls)
+
+                    # Backfill profiles from list
+                    if arguments.max_list_accounts:
+                        accounts = get_list_users(arguments.server, list, token, arguments.max_list_accounts)
+                        add_user_posts(arguments.server, token, accounts, recently_checked_users, all_known_users, seen_urls, seen_hosts)
 
             if arguments.reply_interval_in_hours > 0:
                 """pull the context toots of toots user replied to, from their

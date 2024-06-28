@@ -5,13 +5,15 @@ This GitHub repository provides a simple script that can pull missing posts into
 1. It can pull missing remote replies to posts that are already on your server into your server. Specifically, it can
    1. fetch missing replies to posts that users on your instance have already replied to,
    2. fetch missing replies to the most recent posts in your home timeline,
-   3. fetch missing replies to your bookmarks.
-   4. fetch missing replies to your favourites.
+   3. fetch missing replies to your bookmarks,
+   4. fetch missing replies to your favourites,
+   5. fetch missing replies to the most recent posts in your lists.
 2. It can also backfill profiles on your instance. In particular it can
    1. fetch missing posts from users that have recently appeared in your notifications,
-   1. fetch missing posts from users that you have recently followed,
-   2. fetch missing posts form users that have recently followed you,
-   3. fetch missing posts form users that have recently sent you a follow request.
+   2. fetch missing posts from users that you have recently followed,
+   3. fetch missing posts from users that have recently followed you,
+   4. fetch missing posts from users that have recently sent you a follow request,
+   5. fetch missing posts from users that have recently been added to your lists.
 
 Each part of this script is fully configurable, and you can completely disable parts that you are not interested in.
 
@@ -142,6 +144,9 @@ Option | Required? | Notes |
 | `reply-interval-in-hours` | No | Provide to fetch remote replies to posts that have received replies from users on your own instance. Determines how far back in time we'll go to find posts that have received replies. You must be administrator on your instance to use this option, and this option is not supported on Pleroma / Akkoma and its forks. Recommend value: `0` (disabled). Requires an access token with `admin:read:accounts`.
 |`backfill-with-context` | No | Set to `0` to disable fetching remote replies while backfilling profiles. This is enabled by default, but you can disable it, if it's too slow for you.
 |`backfill-mentioned-users` | No | Set to `0` to disable backfilling any mentioned users when fetching the home timeline. This is enabled by default, but you can disable it, if it's too slow for you.
+| `from-lists`| No | Set to `1` to fetch missing replies and/or backfill account from your lists. This is disabled by default.
+| `max-list-length` | No | Determines how many posts we'll fetch replies for in each list. Default value: `100`. This will be ignored, unless you also provide `from-lists = 1`. Set to `0` if you only want to backfill profiles in lists. |
+| `max-list-accounts` | No | Determines how many accounts we'll backfill for in each list. Default value: `10`. This will be ignored, unless you also provide `from-lists = 1`. Set to `0` if you only want to fetch replies in lists. |
 | `remember-users-for-hours` | No | How long between back-filling attempts for non-followed accounts? Defaults to `168`, i.e. one week.
 | `remember-hosts-for-days` | No | How long should FediFetcher cache host info for? Defaults to `30`.
 | `http-timeout` | No | The timeout for any HTTP requests to the Mastodon API in seconds. Defaults to `5`.
@@ -174,6 +179,8 @@ This is only supported when running FediFetcher as cron job, or container. Multi
    - `read:favourites`
  - If you are supplying `from-notifications` you must additionally enable this scope:
    - `read:notifications`
+ - If you are supplying `from-lists` you must additionally enable this scope:
+   - `read:lists`
 
 ## Acknowledgments
 
