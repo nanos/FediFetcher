@@ -144,7 +144,7 @@ Option | Required? | Notes |
 | `reply-interval-in-hours` | No | Provide to fetch remote replies to posts that have received replies from users on your own instance. Determines how far back in time we'll go to find posts that have received replies. You must be administrator on your instance to use this option, and this option is not supported on Pleroma / Akkoma and its forks. Recommend value: `0` (disabled). Requires an access token with `admin:read:accounts`.
 |`backfill-with-context` | No | Set to `0` to disable fetching remote replies while backfilling profiles. This is enabled by default, but you can disable it, if it's too slow for you.
 |`backfill-mentioned-users` | No | Set to `0` to disable backfilling any mentioned users when fetching the home timeline. This is enabled by default, but you can disable it, if it's too slow for you.
-| `from-lists`| No | Set to `1` to fetch missing replies and/or backfill account from your lists. This is disabled by default.
+| `from-lists`| No | Set to `1` to fetch missing replies and/or backfill account from your lists. This is disabled by default. Requires an access token with `read:lists` scope. |
 | `max-list-length` | No | Determines how many posts we'll fetch replies for in each list. Default value: `100`. This will be ignored, unless you also provide `from-lists = 1`. Set to `0` if you only want to backfill profiles in lists. |
 | `max-list-accounts` | No | Determines how many accounts we'll backfill for in each list. Default value: `10`. This will be ignored, unless you also provide `from-lists = 1`. Set to `0` if you only want to fetch replies in lists. |
 | `remember-users-for-hours` | No | How long between back-filling attempts for non-followed accounts? Defaults to `168`, i.e. one week.
