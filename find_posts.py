@@ -1529,16 +1529,16 @@ if __name__ == "__main__":
             if arguments.from_lists:
                 """Pull replies from lists"""
                 lists = get_user_lists(arguments.server, token)
-                for list in lists:
+                for user_list in lists:
                     # Fill context from list
                     if arguments.max_list_length > 0:
-                        timeline_toots = get_list_timeline(arguments.server, list, token, arguments.max_list_length)
+                        timeline_toots = get_list_timeline(arguments.server, user_list, token, arguments.max_list_length)
                         known_context_urls = get_all_known_context_urls(arguments.server, timeline_toots,parsed_urls, seen_hosts)
                         add_context_urls(arguments.server, token, known_context_urls, seen_urls)
 
                     # Backfill profiles from list
                     if arguments.max_list_accounts:
-                        accounts = get_list_users(arguments.server, list, token, arguments.max_list_accounts)
+                        accounts = get_list_users(arguments.server, user_list, token, arguments.max_list_accounts)
                         add_user_posts(arguments.server, token, accounts, recently_checked_users, all_known_users, seen_urls, seen_hosts)
 
             if arguments.reply_interval_in_hours > 0:
