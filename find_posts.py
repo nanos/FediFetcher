@@ -16,6 +16,7 @@ import uuid
 import defusedxml.ElementTree as ET
 import urllib.robotparser
 from urllib.parse import urlparse
+import hashlib
 
 logger = logging.getLogger("FediFetcher")
 robotParser = urllib.robotparser.RobotFileParser()
@@ -1011,41 +1012,54 @@ def get_paginated_mastodon(url, max, headers = {}, timeout = 0, max_tries = 5):
                 break
     return result
 
+def get_robots_txt_cache_path(robots_url):
+    hash = hashlib.sha256(robots_url.encode('utf-8'))
+    return os.path.join(arguments.state_dir, f'robots-{hash.hexdigest()}.txt')
+
+def get_cached_robots(robots_url):
+    ## firstly: check the in-memory cache
+    if robots_url in ROBOTS_TXT:
+        return ROBOTS_TXT[robots_url]
+        
+    robotsCachePath = get_robots_txt_cache_path(robots_url)
+    if os.path.exists(robotsCachePath):
+        with open(robotsCachePath, "r", encoding="utf-8") as f:
+            logger.debug(f"Getting robots.txt file from cache for {robots_url}.")
+            robotsTxt = f.read()
+            ROBOTS_TXT[robots_url] = robotsTxt
+            return robotsTxt
+    
+    return None
+    
+def get_robots_from_url(robots_url):
+    robotsTxt = get_cached_robots(robots_url)
+    if robotsTxt != None:
+        return robotsTxt
+    
+    try:
+        # We are getting the robots.txt manually from here, because otherwise we can't change the User Agent
+        robotsTxt = get(robots_url, timeout = 2, ignore_robots_txt=True)
+        if robotsTxt.status_code in (401, 403):
+            robotsTxt = False
+        else:
+            robotsTxt = robotsTxt.text
+            with open(get_robots_txt_cache_path(robots_url), "w", encoding="utf-8") as f:
+                f.write(robotsTxt)
+
+    except Exception as ex:
+        robotsTxt = True
+
+    ROBOTS_TXT[robots_url] = robotsTxt
+    return robotsTxt
+
+
 def can_fetch(user_agent, url):
     parsed_uri = urlparse(url)
-    robots = '{uri.scheme}://{uri.netloc}/robots.txt'.format(uri=parsed_uri)
+    robots_url = '{uri.scheme}://{uri.netloc}/robots.txt'.format(uri=parsed_uri)
 
-    if robots in ROBOTS_TXT:
-        if isinstance(ROBOTS_TXT[robots], bool):
-            return ROBOTS_TXT[robots]
-        else:
-            robotsTxt = ROBOTS_TXT[robots]
-    else:
-        robotsCachePath = os.path.join(arguments.state_dir, f'robots-{parsed_uri.netloc}')
-        if os.path.exists(robotsCachePath):
-            with open(robotsCachePath, "r", encoding="utf-8") as f:
-                logger.debug(f"Getting robots.txt file from cache {parsed_uri.netloc}")
-                robotsTxt = f.read()
-            ROBOTS_TXT[robots] = robotsTxt
-
-        else:
-            try:
-                # We are getting the robots.txt manually from here, because otherwise we can't change the User Agent
-                robotsTxt = get(robots, timeout = 2, ignore_robots_txt=True)
-                if robotsTxt.status_code in (401, 403):
-                    ROBOTS_TXT[robots] = False
-                    return False
-                elif robotsTxt.status_code != 200:
-                    ROBOTS_TXT[robots] = True
-                    return True
-                robotsTxt = robotsTxt.text
-                ROBOTS_TXT[robots] = robotsTxt
-                
-                with open(robotsCachePath, "w", encoding="utf-8") as f:
-                    f.write(robotsTxt)
-
-            except Exception as ex:
-                return True
+    robotsTxt = get_robots_from_url(robots_url)
+    if isinstance(robotsTxt, bool):
+        return robotsTxt
     
     robotParser = urllib.robotparser.RobotFileParser()
     robotParser.parse(robotsTxt.splitlines())
