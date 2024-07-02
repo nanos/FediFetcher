@@ -131,7 +131,6 @@ Please find the list of all configuration options, including descriptions, below
 
 Option | Required? | Notes |
 |:----------------------------------------------------|-----------|:------|
-|`log-level` | No | The severity of messages to log. Possible values are `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`. Defaults to `DEBUG`. |
 |`access-token` | Yes | The access token. If using GitHub action, this needs to be provided as a Secret called  `ACCESS_TOKEN`. If running as a cron job or a container, you can supply this option as array, to [fetch posts for multiple users](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher) on your instance. |
 |`server`|Yes|The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`. |
 |`home-timeline-length` | No | Provide to fetch remote replies to posts in the API-Key owner's home timeline. Determines how many posts we'll fetch replies for. Recommended value: `200`.
@@ -156,6 +155,8 @@ Option | Required? | Notes |
 | `on-start` | No | Optionally provide a callback URL that will be pinged when processing is starting. A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
 | `on-done` | No | Optionally provide a callback URL that will be called when processing is finished.  A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
 | `on-fail` | No | Optionally provide a callback URL that will be called when processing has failed.  A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
+|`log-level` | No | The severity of messages to log. Possible values are `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`. Defaults to `DEBUG`. |
+|`log-format` | No | The format used for logging. See the [documentation](https://docs.python.org/3/library/logging.html) for details. Defaults to `%(asctime)s: %(message)s` |
 
 ### Multi User support
 

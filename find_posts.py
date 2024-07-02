@@ -26,7 +26,6 @@ VERSION = "7.1.3"
 argparser=argparse.ArgumentParser()
 
 argparser.add_argument('-c','--config', required=False, type=str, help='Optionally provide a path to a JSON file containing configuration options. If not provided, options must be supplied using command line flags.')
-argparser.add_argument('--log-level', required=False, default="DEBUG", help="Severity of events to log (DEBUG|INFO|WARNING|ERROR|CRITICAL)")
 argparser.add_argument('--server', required=False, help="Required: The name of your server (e.g. `mstdn.thms.uk`)")
 argparser.add_argument('--access-token', action="append", required=False, help="Required: The access token can be generated at https://<server>/settings/applications, and must have read:search, read:statuses and admin:read:accounts scopes. You can supply this multiple times, if you want tun run it for multiple users.")
 argparser.add_argument('--reply-interval-in-hours', required = False, type=int, default=0, help="Fetch remote replies to posts that have received replies from users on your own instance in this period")
@@ -52,6 +51,8 @@ argparser.add_argument('--on-fail', required = False, default=None, help="Provid
 argparser.add_argument('--from-lists', required=False, type=bool, default=False, help="Set to `1` to fetch missing replies and/or backfill account from your lists. This is disabled by default.")
 argparser.add_argument('--max-list-length', required=False, type=int, default=100, help="Determines how many posts we'll fetch replies for in each list. This will be ignored, unless you also provide `from-lists = 1`. Set to `0` if you only want to backfill profiles in lists.")
 argparser.add_argument('--max-list-accounts', required=False, type=int, default=10, help="Determines how many accounts we'll backfill for in each list. This will be ignored, unless you also provide `from-lists = 1`. Set to `0` if you only want to fetch replies in lists.")
+argparser.add_argument('--log-level', required=False, default="DEBUG", help="Severity of events to log (DEBUG|INFO|WARNING|ERROR|CRITICAL)")
+argparser.add_argument('--log-format', required=False, type=str, default="%(asctime)s: %(message)s",help="Specify the log format")
 
 def get_notification_users(server, access_token, known_users, max_age):
     since = datetime.now(datetime.now().astimezone().tzinfo) - timedelta(hours=max_age)
@@ -1389,8 +1390,8 @@ if __name__ == "__main__":
 
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.basicConfig(
-        format=f"%(asctime)s.%(msecs)03d {time.strftime('%Z')}: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
+        format=f"{arguments.log_format}",
+        datefmt="%Y-%m-%d %H:%M:%S %Z",
         level=arguments.log_level.upper(),
     )
 
