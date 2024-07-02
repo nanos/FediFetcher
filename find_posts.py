@@ -1382,6 +1382,30 @@ def get_list_users(server, list, token, max):
     logger.info(f"Found {len(accounts)} accounts in list {list['title']}")
     return accounts
 
+def fetch_timeline_context(timeline_posts, token, parsed_urls, seen_hosts, seen_urls, all_known_users, recently_checked_users):
+    known_context_urls = get_all_known_context_urls(arguments.server, timeline_posts,parsed_urls, seen_hosts)
+    add_context_urls(arguments.server, token, known_context_urls, seen_urls)
+
+    # Backfill any post authors, and any mentioned users
+    if arguments.backfill_mentioned_users > 0:
+        mentioned_users = []
+        cut_off = datetime.now(datetime.now().astimezone().tzinfo) - timedelta(minutes=60)
+        for toot in timeline_posts:
+            these_users = []
+            toot_created_at = parser.parse(toot['created_at'])
+            if len(mentioned_users) < 10 or (toot_created_at > cut_off and len(mentioned_users) < 30):
+                these_users.append(toot['account'])
+                if(len(toot['mentions'])):
+                    these_users += toot['mentions']
+                if(toot['reblog'] != None):
+                    these_users.append(toot['reblog']['account'])
+                    if(len(toot['reblog']['mentions'])):
+                        these_users += toot['reblog']['mentions']
+            for user in these_users:
+                if user not in mentioned_users and user['acct'] not in all_known_users:
+                    mentioned_users.append(user)
+
+        add_user_posts(arguments.server, token, filter_known_users(mentioned_users, all_known_users), recently_checked_users, all_known_users, seen_urls, seen_hosts)
 
 if __name__ == "__main__":
     start = datetime.now()
@@ -1552,12 +1576,12 @@ if __name__ == "__main__":
             if arguments.from_lists:
                 """Pull replies from lists"""
                 lists = get_user_lists(arguments.server, token)
+                logger.info(f"Getting context for {len(lists)} lists")
                 for user_list in lists:
                     # Fill context from list
                     if arguments.max_list_length > 0:
                         timeline_toots = get_list_timeline(arguments.server, user_list, token, arguments.max_list_length)
-                        known_context_urls = get_all_known_context_urls(arguments.server, timeline_toots,parsed_urls, seen_hosts)
-                        add_context_urls(arguments.server, token, known_context_urls, seen_urls)
+                        fetch_timeline_context(timeline_toots, token, parsed_urls, seen_hosts, seen_urls, all_known_users, recently_checked_users)
 
                     # Backfill profiles from list
                     if arguments.max_list_accounts:
@@ -1582,30 +1606,9 @@ if __name__ == "__main__":
 
             if arguments.home_timeline_length > 0:
                 """Do the same with any toots on the key owner's home timeline """
+                logger.info(f"Getting context for home timeline")
                 timeline_toots = get_timeline(arguments.server, token, arguments.home_timeline_length)
-                known_context_urls = get_all_known_context_urls(arguments.server, timeline_toots,parsed_urls, seen_hosts)
-                add_context_urls(arguments.server, token, known_context_urls, seen_urls)
-
-                # Backfill any post authors, and any mentioned users
-                if arguments.backfill_mentioned_users > 0:
-                    mentioned_users = []
-                    cut_off = datetime.now(datetime.now().astimezone().tzinfo) - timedelta(minutes=60)
-                    for toot in timeline_toots:
-                        these_users = []
-                        toot_created_at = parser.parse(toot['created_at'])
-                        if len(mentioned_users) < 10 or (toot_created_at > cut_off and len(mentioned_users) < 30):
-                            these_users.append(toot['account'])
-                            if(len(toot['mentions'])):
-                                these_users += toot['mentions']
-                            if(toot['reblog'] != None):
-                                these_users.append(toot['reblog']['account'])
-                                if(len(toot['reblog']['mentions'])):
-                                    these_users += toot['reblog']['mentions']
-                        for user in these_users:
-                            if user not in mentioned_users and user['acct'] not in all_known_users:
-                                mentioned_users.append(user)
-
-                    add_user_posts(arguments.server, token, filter_known_users(mentioned_users, all_known_users), recently_checked_users, all_known_users, seen_urls, seen_hosts)
+                fetch_timeline_context(timeline_toots, token, parsed_urls, seen_hosts, seen_urls, all_known_users, recently_checked_users)
 
             if arguments.max_followings > 0:
                 logger.info(f"Getting posts from last {arguments.max_followings} followings")

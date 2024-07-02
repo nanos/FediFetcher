@@ -1,0 +1,14 @@
+Error getting context for toot https://bsd.network/@lattera/112695266248144937. Exception: Querying https://bsd.network/api/v1/statuses/112695266248144937/context prohibited by robots.txt
+Error getting context for toot https://glitch.social/@wilbr/112708074029292084. Exception: Querying https://glitch.social/api/v1/statuses/112708074029292084/context prohibited by robots.txt
+Error getting context for toot https://mastodon.bida.im/@redhotcyber/112693534053156334. Exception: Querying https://mastodon.bida.im/api/v1/statuses/112693534053156334/context prohibited by robots.txt
+Error getting context for toot https://toot.cafe/@aardrian/112695640079712832. Exception: Querying https://toot.cafe/api/v1/statuses/112695640079712832/context prohibited by robots.txt
+Error getting host node info for flipboard.com. Exception: Querying https://flipboard.com/.well-known/nodeinfo prohibited by robots.txt
+Error getting host node info for fsebugoutzone.org. Exception: Querying https://fsebugoutzone.org/.well-known/nodeinfo prohibited by robots.txt
+Error getting host node info for glitterkitten.co.uk. Exception: Querying https://glitterkitten.co.uk/.well-known/nodeinfo prohibited by robots.txt
+Error getting host node info for kitty.town. Exception: Querying https://kitty.town/.well-known/nodeinfo prohibited by robots.txt
+Error getting host node info for mastodon.bentasker.co.uk. Exception: Querying https://mastodon.bentasker.co.uk/.well-known/nodeinfo prohibited by robots.txt
+Error getting host node info for puddle.town. Exception: Querying https://puddle.town/.well-known/nodeinfo prohibited by robots.txt
+Error getting host node info for shitposter.world. Exception: Querying https://shitposter.world/.well-known/nodeinfo prohibited by robots.txt
+Error getting host node info for threads.net. Exception: Querying https://threads.net/.well-known/nodeinfo prohibited by robots.txt
+Error getting host node info for www.threads.net. Exception: Querying https://www.threads.net/.well-known/nodeinfo prohibited by robots.txt
+Error getting user ID for user aardrian: Querying https://toot.cafe/api/v1/accounts/lookup?acct=aardrian prohibited by robots.txt
