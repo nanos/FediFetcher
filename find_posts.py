@@ -1530,14 +1530,14 @@ if __name__ == "__main__":
                 recently_checked_context = json.load(f)
 
         # Remove any toots that we haven't seen in a while, to ensure this doesn't grow indefinitely
-        for tootUrl in recently_checked_context:
+        for tootUrl in list(recently_checked_context):
             recently_checked_context[tootUrl]['lastSeen'] = parser.parse(recently_checked_context[tootUrl]['lastSeen'])
             recently_checked_context[tootUrl]['created_at'] = parser.parse(recently_checked_context[tootUrl]['created_at'])
             lastSeen = recently_checked_context[tootUrl]['lastSeen']
             userAge = datetime.now(lastSeen.tzinfo) - lastSeen
             # dont really need to keep track for more than 7 days: if we haven't seen it in 7 days we can refetch content anyway
             if(userAge.total_seconds() > 7 * 24 * 60 * 60):
-                recently_checked_users.pop(tootUrl)    
+                recently_checked_context.pop(tootUrl)    
 
         parsed_urls = {}
 
