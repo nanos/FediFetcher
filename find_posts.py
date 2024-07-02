@@ -1604,7 +1604,9 @@ if __name__ == "__main__":
 
             for host in list(seen_hosts):
                 serverInfo = seen_hosts.get(host)
-                if 'last_checked' in serverInfo:
+                if 'peertubeApiSupport' not in serverInfo:
+                    seen_hosts.pop(host)
+                elif 'last_checked' in serverInfo:
                     serverAge = datetime.now(serverInfo['last_checked'].tzinfo) - serverInfo['last_checked']
                     if(serverAge.total_seconds() > arguments.remember_hosts_for_days * 24 * 60 * 60 ):
                         seen_hosts.pop(host)
