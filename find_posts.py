@@ -479,6 +479,14 @@ def get_reply_toots(user_id, server, access_token, seen_urls, reply_since):
         f"Error getting replies for user {user_id} on server {server}. Status code: {resp.status_code}"
     )
 
+
+def toot_context_can_be_fetched(toot):
+    fetchable = toot["visibility"] in ["public", "unlisted"]
+    if not fetchable:
+        logger.debug(f"Cannot fetch context of private toot {toot['uri']}")
+    return fetchable
+
+
 def toot_context_should_be_fetched(toot):
     if toot['uri'] not in recently_checked_context:
         recently_checked_context[toot['uri']] = toot
@@ -512,7 +520,7 @@ def get_all_known_context_urls(server, reply_toots, parsed_urls, seen_hosts):
         if toot_has_parseable_url(toot, parsed_urls):
             url = toot["url"] if toot["reblog"] is None else toot["reblog"]["url"]
             parsed_url = parse_url(url, parsed_urls)
-            if(toot_context_should_be_fetched(toot)):
+            if toot_context_can_be_fetched(toot) and toot_context_should_be_fetched(toot):
                 recently_checked_context[toot['uri']]['lastSeen'] = datetime.now(datetime.now().astimezone().tzinfo)
                 context = get_toot_context(parsed_url[0], parsed_url[1], url, seen_hosts)
                 if context is not None:
