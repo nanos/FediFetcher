@@ -156,6 +156,9 @@ def get_user_posts(user, known_followings, server, seen_hosts):
 
     if post_server['misskeyApiSupport']:
         return get_user_posts_misskey(parsed_url[1], post_server['webserver'])
+    
+    if post_server['peertubeApiSupport']:
+        return get_user_posts_peertube(parsed_url[1], post_server['webserver'])
 
     logger.error(f'server api unknown for {post_server["webserver"]}, cannot fetch user posts')
     return None
@@ -218,6 +221,19 @@ def get_user_posts_lemmy(userName, userUrl, webserver):
             
         except Exception as ex:
             logger.error(f"Error getting user posts for user {userName}: {ex}")
+        return None
+    
+def get_user_posts_peertube(userName, webserver):
+    try:
+        url = f'https://{webserver}/api/v1/accounts/{userName}/videos'
+        response = get(url)
+        if response.status_code == 200:
+            return response.json()['data']
+        else:
+            logger.error(f"Error getting posts by user {userName} from {webserver}. Status Code: {response.status_code}")
+            return None
+    except Exception as ex:
+        logger.error(f"Error getting posts by user {userName} from {webserver}. Exception: {ex}")
         return None
 
 def get_user_posts_misskey(userName, webserver):
@@ -602,7 +618,11 @@ def parse_user_url(url):
     if match is not None:
         return match
 
-# Pixelfed profile paths do not use a subdirectory, so we need to match for them last.
+    match = parse_peertube_profile_url(url)
+    if match is not None:
+        return match
+
+    # Pixelfed profile paths do not use a subdirectory, so we need to match for them last.
     match = parse_pixelfed_profile_url(url)
     if match is not None:
         return match
@@ -639,6 +659,11 @@ def parse_url(url, parsed_urls):
 
     if url not in parsed_urls:
         match = parse_misskey_url(url)
+        if match is not None:
+            parsed_urls[url] = match
+
+    if url not in parsed_urls:
+        match = parse_peertube_url(url)
         if match is not None:
             parsed_urls[url] = match
 
@@ -715,6 +740,15 @@ def parse_misskey_url(url):
         return (match.group("server"), match.group("toot_id"))
     return None
 
+def parse_peertube_url(url):
+    """parse a Misskey URL and return the server and ID"""
+    match = re.match(
+        r"https://(?P<server>[^/]+)/videos/watch/(?P<toot_id>[^/]+)", url
+    )
+    if match is not None:
+        return (match.group("server"), match.group("toot_id"))
+    return None
+
 def parse_pixelfed_profile_url(url):
     """parse a Pixelfed Profile URL and return the server and username"""
     match = re.match(r"https://(?P<server>[^/]+)/(?P<username>[^/]+)", url)
@@ -734,6 +768,12 @@ def parse_lemmy_url(url):
 def parse_lemmy_profile_url(url):
     """parse a Lemmy Profile URL and return the server and username"""
     match = re.match(r"https://(?P<server>[^/]+)/(?:u|c)/(?P<username>[^/]+)", url)
+    if match is not None:
+        return (match.group("server"), match.group("username"))
+    return None
+
+def parse_peertube_profile_url(url):
+    match = re.match(r"https://(?P<server>[^/]+)/accounts/(?P<username>[^/]+)", url)
     if match is not None:
         return (match.group("server"), match.group("username"))
     return None
@@ -786,6 +826,8 @@ def get_toot_context(server, toot_id, toot_url, seen_hosts):
         return get_lemmy_urls(post_server['webserver'], toot_id, toot_url)
     if post_server['misskeyApiSupport']:
         return get_misskey_urls(post_server['webserver'], toot_id, toot_url)
+    if post_server['peertubeApiSupport']:
+        return get_peertube_urls(post_server['webserver'], toot_id, toot_url)
 
     logger.error(f'unknown server api for {server}')
     return []
@@ -877,6 +919,18 @@ def get_lemmy_comments_urls(webserver, post_id, toot_url):
 
     logger.error(f"Error getting comments for post {toot_url}. Status code: {resp.status_code}")
     return []
+
+def get_peertube_urls(webserver, post_id, toot_url):
+    """get the URLs of the comments of a given peertube video"""
+    comments = f"https://{webserver}/api/v1/videos/{post_id}/comment-threads"
+    try:
+        resp = get(comments)
+    except Exception as ex:
+        logger.error(f"Error getting comments on video {post_id} from {toot_url}. Exception: {ex}")
+        return []
+    
+    if resp.status_code == 200:
+        return [comment['url'] for comment in resp.json()['data']]
 
 def get_misskey_urls(webserver, post_id, toot_url):
     """get the URLs of the comments of a given misskey post"""
@@ -1339,7 +1393,8 @@ def set_server_apis(server):
     software_apis = {
         'mastodonApiSupport': ['mastodon', 'pleroma', 'akkoma', 'pixelfed', 'hometown', 'iceshrimp'],
         'misskeyApiSupport': ['misskey', 'calckey', 'firefish', 'foundkey', 'sharkey'],
-        'lemmyApiSupport': ['lemmy']
+        'lemmyApiSupport': ['lemmy'],
+        'peertubeApiSupport': ['peertube']
     }
 
     # software that has specific API support but is not compatible with FediFetcher for various reasons:
@@ -1549,7 +1604,9 @@ if __name__ == "__main__":
 
             for host in list(seen_hosts):
                 serverInfo = seen_hosts.get(host)
-                if 'last_checked' in serverInfo:
+                if 'peertubeApiSupport' not in serverInfo:
+                    seen_hosts.pop(host)
+                elif 'last_checked' in serverInfo:
                     serverAge = datetime.now(serverInfo['last_checked'].tzinfo) - serverInfo['last_checked']
                     if(serverAge.total_seconds() > arguments.remember_hosts_for_days * 24 * 60 * 60 ):
                         seen_hosts.pop(host)
