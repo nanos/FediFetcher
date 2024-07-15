@@ -1,25 +1,25 @@
 # FediFetcher for Mastodon
 
-This GitHub repository provides a simple script that can pull missing posts into Mastodon using the Mastodon API. FediFetcher has no further dependencies, and can be run as either a GitHub Action, as a scheduled cron job, or a pre-packaged container. Here is what FediFetcher can do:
+This GitHub repository provides a simple script that can pull missing posts into Mastodon using the Mastodon API. FediFetcher has no further dependencies, and can be run as either a GitHub Action, a scheduled cron job, or a pre-packaged container. Here is what FediFetcher can do:
 
 1. It can pull missing remote replies to posts that are already on your server into your server. Specifically, it can
-   1. fetch missing replies to posts that users on your instance have already replied to,
-   2. fetch missing replies to the most recent posts in your home timeline,
-   3. fetch missing replies to your bookmarks,
-   4. fetch missing replies to your favourites,
-   5. fetch missing replies to the most recent posts in your lists.
+   1. fetch missing replies to posts that users on your instance have already replied to
+   2. fetch missing replies to the most recent posts in your home timeline
+   3. fetch missing replies to your bookmarks
+   4. fetch missing replies to your favourites
+   5. fetch missing replies to the most recent posts in your lists
 2. It can also backfill profiles on your instance. In particular it can
-   1. fetch missing posts from users that have recently appeared in your notifications,
-   2. fetch missing posts from users that you have recently followed,
-   3. fetch missing posts from users that have recently followed you,
-   4. fetch missing posts from users that have recently sent you a follow request,
-   5. fetch missing posts from users that have recently been added to your lists.
+   1. fetch missing posts from users that have recently appeared in your notifications
+   2. fetch missing posts from users that you have recently followed
+   3. fetch missing posts from users that have recently followed you
+   4. fetch missing posts from users that have recently sent you a follow request
+   5. fetch missing posts from users that have recently been added to your lists
 
-Each part of this script is fully configurable, and you can completely disable parts that you are not interested in.
+Each part of this script is fully configurable and you can disable parts that you are not interested in.
 
 FediFetcher will store posts and profiles it has already pulled in on disk, to prevent re-fetching the same info in subsequent executions.
 
-**Be aware, that this script may run for a *very* long time.** This is particularly true, the first time this script runs, and/or if you enable all parts of this script. You should ensure that you take steps to prevent multiple overlapping executions of this script, as that will lead to unpleasant results. There are detailed instructions for this below.
+**Be aware, that this script may run for a *very* long time.** This is particularly true for the first time this script runs and/or if you enable all parts of this script. You should ensure that you take steps to prevent multiple overlapping executions of this script, as that will lead to unpleasant results. There are detailed instructions for this below.
 
 For detailed information on the how and why, please read the [FediFetcher for Mastodon page](https://blog.thms.uk/fedifetcher?utm_source=github).
 
@@ -29,10 +29,10 @@ FediFetcher makes use of the Mastodon API. It'll run against any instance implem
 
 FediFetcher will pull in posts and profiles from any servers running the following software: 
 
-- Servers that implement the Mastodon API: Mastodon, Pleroma, Akkoma, Pixelfed, Hometown, Iceshrimp,
-- Servers that implement the Misskey API: Misskey, Calckey, Firefish, Foundkey, Sharkey,
-- Lemmy,
-- Peertube.
+- Servers that implement the Mastodon API: Mastodon, Pleroma, Akkoma, Pixelfed, Hometown, Iceshrimp
+- Servers that implement the Misskey API: Misskey, Calckey, Firefish, Foundkey, Sharkey
+- Lemmy
+- Peertube
 
 ## Setup
 
@@ -67,7 +67,7 @@ Run FediFetcher as a GitHub Action, a cron job, or a container:
    1.  Go to Settings > Secrets and Variables > Actions
    2.  Click New Repository Secret
    3.  Supply the Name `ACCESS_TOKEN` and provide the Token generated above as Secret
-3. Create a file called `config.json` with your [configuration options](#configuration-options) in the repository root. **Do NOT include the Access Token in your `config.json`!**
+3. Create a file called `config.json` with your [configuration options](#configuration-options) in the repository root. **REMOVE the Access Token line from your `config.json`!**
 4. Finally go to the Actions tab and enable the action. The action should now automatically run approximately once every 10 min.
 
 > **Note**
@@ -190,4 +190,4 @@ This is only supported when running FediFetcher as cron job, or container. Multi
 
 ## Acknowledgments
 
-The original inspiration of this script, as well as parts of its implementation are taken from [Abhinav Sarkar](https://notes.abhinavsarkar.net/2023/mastodon-context). Thank you Abhinav!
+The original inspiration of this script, as well as parts of its implementation were taken from [Abhinav Sarkar](https://notes.abhinavsarkar.net/2023/mastodon-context). Thank you Abhinav!
