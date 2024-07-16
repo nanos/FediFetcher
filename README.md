@@ -67,10 +67,10 @@ Run FediFetcher as a GitHub Action, a cron job, or a container:
    1.  Go to Settings > Secrets and Variables > Actions
    2.  Click New Repository Secret
    3.  Supply the Name `ACCESS_TOKEN` and provide the Token generated above as Secret
-3. Create a file called `config.json` with your [configuration options](#configuration-options) in the repository root. **REMOVE the Access Token line from your `config.json`!**
+3. Create a file called `config.json` with your [configuration options](#configuration-options) in the repository root. **Do NOT include the Access Token in your `config.json`!**
 4. Finally go to the Actions tab and enable the action. The action should now automatically run approximately once every 10 min.
 
-> **Note**
+> [!NOTE]
 >
 > Keep in mind that [the schedule event can be delayed during periods of high loads of GitHub Actions workflow runs](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule).
 
@@ -85,7 +85,7 @@ If desired, all configuration options can be provided as command line flags, ins
 
 When using a cronjob, we are using file based locking to avoid multiple overlapping executions of the script. The timeout period for the lock can be configured using `lock-hours`.
 
-> **Note**
+> [!TIP]
 >
 > If you are running FediFetcher locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
 
@@ -96,7 +96,7 @@ FediFetcher is also available in a pre-packaged container, [FediFetcher](https:/
 1. Pull the container from `ghcr.io`, using Docker or your container tool of choice: `docker pull ghcr.io/nanos/fedifetcher:latest`
 2. Run the container, passing the configurations options as command line arguments: `docker run -it ghcr.io/nanos/fedifetcher:latest --access-token=<TOKEN> --server=<SERVER>`
 
-> **Note**
+> [!IMPORTANT]
 >
 > The same rules for running this as a cron job apply to running the container: don't overlap any executions.
 
@@ -114,9 +114,9 @@ See [systemd.md](./examples/systemd.md)
 
 FediFetcher has quite a few configuration options, so here is my quick configuration advice, that should probably work for most people:
 
-> **Warning**
+> [!CAUTION]
 >
-> **Do NOT** include your `access-token` in the `config.json` when running FediFetcher as GitHub Action. When running FediFetcher as GitHub Action **ALWAYS** [set the Access Token as an Action Secret](#to-run-fedifetcher-as-a-github-action).
+> **Remove the `access-token` from the `config.json`** when running FediFetcher as GitHub Action. When running FediFetcher as GitHub Action **ALWAYS** [set the Access Token as an Action Secret](#to-run-fedifetcher-as-a-github-action).
 
 ```json
 {
