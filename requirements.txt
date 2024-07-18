@@ -1,10 +1,14 @@
 certifi==2024.7.4
 charset-normalizer==3.0.1
+defusedxml==0.7.1
 docutils==0.19
 idna==3.7
+iniconfig==2.0.0
+packaging==24.1
+pluggy==1.5.0
+pytest==8.2.2
 python-dateutil==2.8.2
 requests==2.32.0
 six==1.16.0
 smmap==5.0.0
 urllib3==1.26.19
-defusedxml==0.7.1

@@ -1,4 +1,6 @@
 .vscode/launch.json
 artifacts/*
 venv
+.venv
 .DS_Store
+__pycache__
