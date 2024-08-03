@@ -29,7 +29,7 @@ FediFetcher makes use of the Mastodon API. It'll run against any instance implem
 
 FediFetcher will pull in posts and profiles from any servers running the following software: 
 
-- Servers that implement the Mastodon API: Mastodon, Pleroma, Akkoma, Pixelfed, Hometown, Iceshrimp
+- Servers that implement the Mastodon API: Mastodon, Pleroma, Akkoma, Pixelfed, Hometown, Iceshrimp, Iceshrimp.NET
 - Servers that implement the Misskey API: Misskey, Calckey, Firefish, Foundkey, Sharkey
 - Lemmy
 - Peertube
