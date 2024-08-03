@@ -1488,6 +1488,9 @@ if __name__ == "__main__":
             logger.critical(f"Config file {arguments.config} doesn't exist")
             sys.exit(1)
 
+    if tokens := [token for envvar, token in os.environ.items() if envvar.startswith("ACCESS_TOKEN")]:
+        arguments.access_token = tokens
+
     logger.info(f"Starting FediFetcher")
 
     if(arguments.server == None or arguments.access_token == None):
