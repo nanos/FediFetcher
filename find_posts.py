@@ -99,7 +99,7 @@ def add_user_posts(server, access_token, followings, known_followings, all_known
                             failed += 1
                 logger.info(f"Added {count} posts for user {user['acct']} with {failed} errors")
                 if failed == 0:
-                    known_followings.add(user['acct'])
+                    known_followings.add(user['acct']) 
                     all_known_users.add(user['acct'])
 
 def add_post_with_context(post, server, access_token, seen_urls, seen_hosts):
@@ -1391,7 +1391,7 @@ def get_server_info(server, seen_hosts):
 def set_server_apis(server):
     # support for new server software should be added here
     software_apis = {
-        'mastodonApiSupport': ['mastodon', 'pleroma', 'akkoma', 'pixelfed', 'hometown', 'iceshrimp'],
+        'mastodonApiSupport': ['mastodon', 'pleroma', 'akkoma', 'pixelfed', 'hometown', 'iceshrimp', 'Iceshrimp.NET'],
         'misskeyApiSupport': ['misskey', 'calckey', 'firefish', 'foundkey', 'sharkey'],
         'lemmyApiSupport': ['lemmy'],
         'peertubeApiSupport': ['peertube']
