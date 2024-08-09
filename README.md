@@ -36,8 +36,6 @@ FediFetcher will pull in posts and profiles from any servers running the followi
 
 ## Setup
 
-You can run FediFetcher either as a GitHub Action, as a scheduled cron job on your local machine/server, or from a pre-packed container.
-
 ### 1) Get the required access token:
 
 Regardless of how you want to run FediFetcher, you must first get an access token:
@@ -58,7 +56,7 @@ Regardless of how you want to run FediFetcher, you must first get an access toke
 
 ### 2) Configure and run FediFetcher
 
-Run FediFetcher as a GitHub Action, a cron job, or a container:
+You can run FediFetcher as a GitHub Action, a cron job, a container, or a systemd timer. Choose whichever is the most suitable for you (if you are not sure, I suggest trying the GitHub Action).
 
 #### To run FediFetcher as a GitHub Action:
 
@@ -74,20 +72,23 @@ Run FediFetcher as a GitHub Action, a cron job, or a container:
 >
 > Keep in mind that [the schedule event can be delayed during periods of high loads of GitHub Actions workflow runs](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule).
 
+<details>
+<summary>
 #### To run FediFetcher as a cron job:
+</summary>
 
 1. Clone this repository.
 2. Install requirements: `pip install -r requirements.txt`
 3. Create a `json` file with [your configuration options](#configuration-options). You may wish to store this in the `./artifacts` directory, as that directory is `.gitignore`d
 4. Then simply run this script like so: `python find_posts.py -c=./artifacts/config.json`.
 
-If desired, all configuration options can be provided as command line flags, instead of through a JSON file. An [example script](./examples/FediFetcher.sh) can be found in the `examples` folder.
-
 When using a cronjob, we are using file based locking to avoid multiple overlapping executions of the script. The timeout period for the lock can be configured using `lock-hours`.
 
 > [!TIP]
 >
 > If you are running FediFetcher locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
+
+</details>
 
 #### To run FediFetcher from a container:
 
@@ -96,7 +97,7 @@ FediFetcher is also available in a pre-packaged container, [FediFetcher](https:/
 1. Pull the container from `ghcr.io`, using Docker or your container tool of choice: `docker pull ghcr.io/nanos/fedifetcher:latest`
 2. Run the container, passing the configurations options as command line arguments: `docker run -it ghcr.io/nanos/fedifetcher:latest --access-token=<TOKEN> --server=<SERVER>`
 
-> [!IMPORTANT]
+> [!NOTE]
 >
 > The same rules for running this as a cron job apply to running the container: don't overlap any executions.
 
@@ -141,15 +142,13 @@ Unless you are running FediFetcher as GitHub Action (please see above for instru
 3. Environment variables: <br>
    You can supply your options as environment variables. To do so take the option name from the table below, replace `-` with `_` and prefix with `FF_`. For example `max-favourites` can be set via `FF_MAX_FAVOURITES`. (Environment variables are not case sensitive.)
 
-
-
-#### Advanced Options
+#### All Options
 
 Below is a list of all configuration options, including their descriptions.
 
 Option | Required? | Notes |
 |:----------------------------------------------------|-----------|:------|
-|`access-token` | Yes | The access token. If using GitHub action, this needs to be provided as a Secret called  `ACCESS_TOKEN`. If running as a cron job or a container, you can supply this option as array, to [fetch posts for multiple users](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher) on your instance. To set tokens for multiple users using environment variables, define multiple environment variables with `FF_ACCESS_TOKEN` prefix, eg. `FF_ACCESS_TOKEN_USER1=…` and `FF_ACCESS_TOKEN_USER2=…`|
+|`access-token` | Yes | The access token. If using GitHub action, this needs to be provided as a Secret called  `ACCESS_TOKEN`. If running as a cron job or a container, you can supply this option as array, to [fetch posts for multiple users](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher?utm_source=github) on your instance. To set tokens for multiple users using environment variables, define multiple environment variables with `FF_ACCESS_TOKEN` prefix, eg. `FF_ACCESS_TOKEN_USER1=…` and `FF_ACCESS_TOKEN_USER2=…`|
 |`server`|Yes|The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`. |
 |`home-timeline-length` | No | Provide to fetch remote replies to posts in the API-Key owner's home timeline. Determines how many posts we'll fetch replies for. Recommended value: `200`.
 | `max-bookmarks` | No | Provide to fetch remote replies to any posts you have bookmarked. Determines how many of your bookmarks you want to get replies to. Recommended value: `80`. Requires an access token with `read:bookmarks` scope.
@@ -179,8 +178,6 @@ Option | Required? | Notes |
 ### Multi User support
 
 If you wish to [run FediFetcher for multiple users on your instance](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher?utm_source=github), you can supply the `access-token` as an array, with different access tokens for different users. That will allow you to fetch replies and/or backfill profiles for multiple users on your account.
-
-This is only supported when running FediFetcher as cron job, or container. Multi-user support is not available when running FediFetcher as GitHub Action.
 
 ### Required Access Token Scopes
 
