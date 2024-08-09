@@ -74,7 +74,7 @@ You can run FediFetcher as a GitHub Action, a cron job, a container, or a system
 
 <details>
 <summary>
-#### To run FediFetcher as a cron job:
+<h4 id="to-run-fedifetcher-as-a-github-action">To run FediFetcher as a cron job:</h4>
 </summary>
 
 1. Clone this repository.
