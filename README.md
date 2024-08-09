@@ -56,9 +56,12 @@ Regardless of how you want to run FediFetcher, you must first get an access toke
 
 ### 2) Configure and run FediFetcher
 
-You can run FediFetcher as a GitHub Action, a cron job, a container, or a systemd timer. Choose whichever is the most suitable for you (if you are not sure, I suggest trying the GitHub Action).
+You can run FediFetcher as a GitHub Action, a cron job, a container, or a systemd timer. Choose whichever is the most suitable for you (if you are not sure, I suggest trying the GitHub Action):
 
-#### To run FediFetcher as a GitHub Action:
+<details>
+<summary>
+<h4 id="to-run-fedifetcher-as-a-github-action">To run FediFetcher as a GitHub Action:</h4>
+</summary>
 
 1. Fork this repository
 2. Add your access token:
@@ -71,7 +74,7 @@ You can run FediFetcher as a GitHub Action, a cron job, a container, or a system
 > [!NOTE]
 >
 > Keep in mind that [the schedule event can be delayed during periods of high loads of GitHub Actions workflow runs](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule).
-
+</details>
 <details>
 <summary>
 <h4 id="to-run-fedifetcher-as-a-github-action">To run FediFetcher as a cron job:</h4>
