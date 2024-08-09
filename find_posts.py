@@ -1488,7 +1488,26 @@ if __name__ == "__main__":
             logger.critical(f"Config file {arguments.config} doesn't exist")
             sys.exit(1)
 
-    if tokens := [token for envvar, token in os.environ.items() if envvar.startswith("ACCESS_TOKEN")]:
+    for envvar, value in os.environ.items():
+        envvar = envvar.lower()
+        if envvar.startswith("ff_") and not envvar.startswith("ff_access_token"):
+            envvar = envvar[3:]
+            # most settings are numerical
+            if envvar not in [
+                "server",
+                "lock_file",
+                "state_dir",
+                "on_start",
+                "on_done",
+                "on_fail",
+                "log_level",
+                "log_format"
+            ]:
+                value = int(value)
+            setattr(arguments, envvar, value)
+
+    # remains special-cased for specifying multiple tokens
+    if tokens := [token for envvar, token in os.environ.items() if envvar.lower().startswith("ff_access_token")]:
         arguments.access_token = tokens
 
     logger.info(f"Starting FediFetcher")
