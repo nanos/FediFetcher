@@ -118,7 +118,7 @@ An [example Docker Compose Script](./examples/docker-compose.yaml) for running t
 <summary>
 <h4 id="systemd">To run FediFetcher with systemd-timer:</h4>
 </summary>
-See [systemd.md](./examples/systemd.md)
+See <a href="./examples/systemd.md">systemd.md</a>
 <hr>
 </details>
 
