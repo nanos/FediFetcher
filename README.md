@@ -130,11 +130,22 @@ FediFetcher has quite a few configuration options, so here is my quick configura
 
 If you configure FediFetcher this way, it'll fetch missing remote replies to the last 200 posts in your home timeline. It'll additionally backfill profiles of the last 80 people you followed, and of every account who appeared in your notifications during the past hour.
 
+#### Providing configuration options
+
+Unless you are running FediFetcher as GitHub Action (please see above for instructions on configuring FediFetcher with GitHub Actions), there are a three ways in which you provide configuration options:
+
+1. Configuration File: <br>
+   You can provide a `json` file with configuration options. Then run the script like so: <br>`python find_posts.py -c=/path/to/config.json`
+2. Command line flags: <br>
+   You can provide all options directly in the command line. Simply run the script with te correct options supplied: <br>`python find_posts.py --server=example.com --home-timeline-length=80`.
+3. Environment variables: <br>
+   You can supply your options as environment variables. To do so take the option name from the table below, replace `-` with `_` and prefix with `FF_`. For example `max-favourites` can be set via `FF_MAX_FAVOURITES`. (Environment variables are not case sensitive.)
+
+
+
 #### Advanced Options
 
 Below is a list of all configuration options, including their descriptions.
-Please note that configuration options may also be specified as environment variables starting with the prefix `FF_`, case-insensitive, and with `-` replaced with `_`.
-For example `max-favourites` can be set via `FF_MAX_FAVOURITES` or `ff_max_favourites`)
 
 Option | Required? | Notes |
 |:----------------------------------------------------|-----------|:------|
