@@ -74,10 +74,11 @@ You can run FediFetcher as a GitHub Action, a cron job, a container, or a system
 > [!NOTE]
 >
 > Keep in mind that [the schedule event can be delayed during periods of high loads of GitHub Actions workflow runs](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule).
+<hr>
 </details>
 <details>
 <summary>
-<h4 id="to-run-fedifetcher-as-a-github-action">To run FediFetcher as a cron job:</h4>
+<h4 id="cron-job">To run FediFetcher as a cron job:</h4>
 </summary>
 
 1. Clone this repository.
@@ -90,10 +91,12 @@ When using a cronjob, we are using file based locking to avoid multiple overlapp
 > [!TIP]
 >
 > If you are running FediFetcher locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
-
+<hr>
 </details>
-
-#### To run FediFetcher from a container:
+<details>
+<summary>
+<h4 id="container">To run FediFetcher from a container:</h4>
+</summary>
 
 FediFetcher is also available in a pre-packaged container, [FediFetcher](https://github.com/nanos/FediFetcher/pkgs/container/fedifetcher) - Thank you [@nikdoof](https://github.com/nikdoof).
 
@@ -109,10 +112,15 @@ Persistent files are stored in `/app/artifacts` within the container, so you may
 An [example Kubernetes CronJob](./examples/k8s-cronjob.yaml) for running the container is included in the `examples` folder.
 
 An [example Docker Compose Script](./examples/docker-compose.yaml) for running the container periodically is included in the `examples` folder.
-
-#### To run FediFetcher with systemd-timer:
+<hr>
+</details>
+<details>
+<summary>
+<h4 id="systemd">To run FediFetcher with systemd-timer:</h4>
 
 See [systemd.md](./examples/systemd.md)
+<hr>
+</details>
 
 ### Configuration options
 
