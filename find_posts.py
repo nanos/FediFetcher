@@ -21,7 +21,7 @@ import hashlib
 logger = logging.getLogger("FediFetcher")
 robotParser = urllib.robotparser.RobotFileParser()
 
-VERSION = "7.1.3"
+VERSION = "7.1.6"
 
 argparser=argparse.ArgumentParser()
 
