@@ -1,0 +1,27 @@
+name: Update Version number
+
+"on":
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout original repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Git
+        run: |
+           git config user.name nanos-bot
+           git config user.email bot@thms.uk
+      - name: Update version number
+        run: |
+          VERSION=${{ github.ref_name }}
+          VERSION="${VERSION:1}"
+          sed -i '' -E 's/VERSION = "[0-9]+.[0-9]+.[0-9]+"/VERSION = "'$VERSION'"/' find_posts.py  
+          git add find_posts.py 
+          git commit -m "[bot] Bump version to $VERSION"
+      - name: Push to repository
+        run: git push --quiet
