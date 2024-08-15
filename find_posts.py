@@ -16,7 +16,7 @@ import uuid
 import defusedxml.ElementTree as ET
 import urllib.robotparser
 from urllib.parse import urlparse
-import hashlib
+import xxhash
 
 logger = logging.getLogger("FediFetcher")
 robotParser = urllib.robotparser.RobotFileParser()
@@ -1076,7 +1076,7 @@ def get_paginated_mastodon(url, max, headers = {}, timeout = 0, max_tries = 5):
     return result
 
 def get_robots_txt_cache_path(robots_url):
-    hash = hashlib.sha256(robots_url.encode('utf-8'))
+    hash = xxhash.xxh128(robots_url.encode('utf-8'))
     return os.path.join(arguments.state_dir, f'robots-{hash.hexdigest()}.txt')
 
 def get_cached_robots(robots_url):
