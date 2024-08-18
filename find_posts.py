@@ -1578,7 +1578,7 @@ if __name__ == "__main__":
         SEEN_HOSTS_FILE = os.path.join(arguments.state_dir, "seen_hosts")
         RECENTLY_CHECKED_CONTEXTS_FILE = os.path.join(arguments.state_dir, 'recent_context')
 
-        INSTANCE_BLOCKLIST = arguments.instance_blocklist.split(",")
+        INSTANCE_BLOCKLIST = [x.strip() for x in arguments.instance_blocklist.split(",")]
         ROBOTS_TXT = {}
 
         seen_urls = OrderedSet([])
