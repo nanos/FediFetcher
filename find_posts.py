@@ -1121,6 +1121,10 @@ def can_fetch(user_agent, url):
     parsed_uri = urlparse(url)
     robots_url = '{uri.scheme}://{uri.netloc}/robots.txt'.format(uri=parsed_uri)
 
+    if parsed_uri.netloc in INSTANCE_BLOCKLIST:
+        # Never connect to these locations
+        raise Exception(f"Connecting to {parsed_uri.netloc} is prohibited by the configured blocklist")
+
     robotsTxt = get_robots_from_url(robots_url)
     if isinstance(robotsTxt, bool):
         return robotsTxt
@@ -1576,9 +1580,6 @@ if __name__ == "__main__":
 
         INSTANCE_BLOCKLIST = arguments.instance_blocklist.split(",")
         ROBOTS_TXT = {}
-
-        print(INSTANCE_BLOCKLIST)
-        sys.exit()
 
         seen_urls = OrderedSet([])
         if os.path.exists(SEEN_URLS_FILE):
