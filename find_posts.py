@@ -53,6 +53,7 @@ argparser.add_argument('--max-list-length', required=False, type=int, default=10
 argparser.add_argument('--max-list-accounts', required=False, type=int, default=10, help="Determines how many accounts we'll backfill for in each list. This will be ignored, unless you also provide `from-lists = 1`. Set to `0` if you only want to fetch replies in lists.")
 argparser.add_argument('--log-level', required=False, default="DEBUG", help="Severity of events to log (DEBUG|INFO|WARNING|ERROR|CRITICAL)")
 argparser.add_argument('--log-format', required=False, type=str, default="%(asctime)s: %(message)s",help="Specify the log format")
+argparser.add_argument('--instance-blocklist', required=False, type=str, default="",help="A comma-seperated array of instances that FediFetcher should never try to connect to")
 
 def get_notification_users(server, access_token, known_users, max_age):
     since = datetime.now(datetime.now().astimezone().tzinfo) - timedelta(hours=max_age)
@@ -1501,7 +1502,8 @@ if __name__ == "__main__":
                 "on_done",
                 "on_fail",
                 "log_level",
-                "log_format"
+                "log_format",
+                "instance_blocklist"
             ]:
                 value = int(value)
             setattr(arguments, envvar, value)
@@ -1572,7 +1574,11 @@ if __name__ == "__main__":
         SEEN_HOSTS_FILE = os.path.join(arguments.state_dir, "seen_hosts")
         RECENTLY_CHECKED_CONTEXTS_FILE = os.path.join(arguments.state_dir, 'recent_context')
 
+        INSTANCE_BLOCKLIST = arguments.instance_blocklist.split(",")
         ROBOTS_TXT = {}
+
+        print(INSTANCE_BLOCKLIST)
+        sys.exit()
 
         seen_urls = OrderedSet([])
         if os.path.exists(SEEN_URLS_FILE):
