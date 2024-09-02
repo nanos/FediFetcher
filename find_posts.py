@@ -53,6 +53,7 @@ argparser.add_argument('--max-list-length', required=False, type=int, default=10
 argparser.add_argument('--max-list-accounts', required=False, type=int, default=10, help="Determines how many accounts we'll backfill for in each list. This will be ignored, unless you also provide `from-lists = 1`. Set to `0` if you only want to fetch replies in lists.")
 argparser.add_argument('--log-level', required=False, default="DEBUG", help="Severity of events to log (DEBUG|INFO|WARNING|ERROR|CRITICAL)")
 argparser.add_argument('--log-format', required=False, type=str, default="%(asctime)s: %(message)s",help="Specify the log format")
+argparser.add_argument('--instance-blocklist', required=False, type=str, default="",help="A comma-seperated array of instances that FediFetcher should never try to connect to")
 
 def get_notification_users(server, access_token, known_users, max_age):
     since = datetime.now(datetime.now().astimezone().tzinfo) - timedelta(hours=max_age)
@@ -1120,6 +1121,10 @@ def can_fetch(user_agent, url):
     parsed_uri = urlparse(url)
     robots_url = '{uri.scheme}://{uri.netloc}/robots.txt'.format(uri=parsed_uri)
 
+    if parsed_uri.netloc in INSTANCE_BLOCKLIST:
+        # Never connect to these locations
+        raise Exception(f"Connecting to {parsed_uri.netloc} is prohibited by the configured blocklist")
+
     robotsTxt = get_robots_from_url(robots_url)
     if isinstance(robotsTxt, bool):
         return robotsTxt
@@ -1501,7 +1506,8 @@ if __name__ == "__main__":
                 "on_done",
                 "on_fail",
                 "log_level",
-                "log_format"
+                "log_format",
+                "instance_blocklist"
             ]:
                 value = int(value)
             setattr(arguments, envvar, value)
@@ -1572,6 +1578,7 @@ if __name__ == "__main__":
         SEEN_HOSTS_FILE = os.path.join(arguments.state_dir, "seen_hosts")
         RECENTLY_CHECKED_CONTEXTS_FILE = os.path.join(arguments.state_dir, 'recent_context')
 
+        INSTANCE_BLOCKLIST = [x.strip() for x in arguments.instance_blocklist.split(",")]
         ROBOTS_TXT = {}
 
         seen_urls = OrderedSet([])

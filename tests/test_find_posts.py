@@ -1446,6 +1446,7 @@ def test_can_fetch(mock_robotFileParser, mock_get_robots_from_url):
     # Prepare mocks
     mock_robotsTxt = MagicMock()
     mock_robotParser = MagicMock()
+    find_posts.INSTANCE_BLOCKLIST = []
 
     # Mock return values
     mock_get_robots_from_url.return_value = mock_robotsTxt
