@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from datetime import datetime, timedelta
-import string
 from dateutil import parser
 import itertools
 import json
@@ -1110,7 +1109,7 @@ def get_robots_from_url(robots_url):
             with open(get_robots_txt_cache_path(robots_url), "w", encoding="utf-8") as f:
                 f.write(robotsTxt)
 
-    except Exception as ex:
+    except Exception:
         robotsTxt = True
 
     ROBOTS_TXT[robots_url] = robotsTxt
@@ -1516,7 +1515,7 @@ if __name__ == "__main__":
     if tokens := [token for envvar, token in os.environ.items() if envvar.lower().startswith("ff_access_token")]:
         arguments.access_token = tokens
 
-    logger.info(f"Starting FediFetcher")
+    logger.info("Starting FediFetcher")
 
     if(arguments.server == None or arguments.access_token == None):
         logger.critical("You must supply at least a server name and an access token")
@@ -1547,7 +1546,7 @@ if __name__ == "__main__":
 
             if (datetime.now() - lock_time).total_seconds() >= arguments.lock_hours * 60 * 60:
                 os.remove(LOCK_FILE)
-                logger.debug(f"Lock file has expired. Removed lock file.")
+                logger.debug("Lock file has expired. Removed lock file.")
             else:
                 logger.critical(f"Lock file age is {datetime.now() - lock_time} - below --lock-hours={arguments.lock_hours} provided.")
                 if(arguments.on_fail != None and arguments.on_fail != ''):
@@ -1558,7 +1557,7 @@ if __name__ == "__main__":
                 sys.exit(1)
 
         except Exception:
-            logger.critical(f"Cannot read logfile age - aborting.")
+            logger.critical("Cannot read logfile age - aborting.")
             if(arguments.on_fail != None and arguments.on_fail != ''):
                 try:
                     get(f"{arguments.on_fail}?rid={runId}", ignore_robots_txt = True)
@@ -1692,7 +1691,7 @@ if __name__ == "__main__":
 
             if arguments.home_timeline_length > 0:
                 """Do the same with any toots on the key owner's home timeline """
-                logger.info(f"Getting context for home timeline")
+                logger.info("Getting context for home timeline")
                 timeline_toots = get_timeline(arguments.server, token, arguments.home_timeline_length)
                 fetch_timeline_context(timeline_toots, token, parsed_urls, seen_hosts, seen_urls, all_known_users, recently_checked_users)
 
@@ -1758,7 +1757,7 @@ if __name__ == "__main__":
 
         logger.info(f"Processing finished in {datetime.now() - start}.")
 
-    except Exception as ex:
+    except Exception:
         os.remove(LOCK_FILE)
         logger.error(f"Job failed after {datetime.now() - start}.")
         if(arguments.on_fail != None and arguments.on_fail != ''):
