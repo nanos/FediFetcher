@@ -18,7 +18,7 @@ jobs:
         run: |
            git config user.name nanos-bot
            git config user.email bot@thms.uk
-      - uses: mxschmitt/action-tmate@v3
+      #- uses: mxschmitt/action-tmate@v3
       - name: Update version number
         run: |
           VERSION=${{ github.ref_name }}
