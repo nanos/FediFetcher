@@ -23,7 +23,7 @@ jobs:
         run: |
           VERSION=${{ github.ref_name }}
           VERSION="${VERSION:1}"
-          sed  -i -E 's/^VERSION = ".*?"/VERSION = "'$VERSION'"/g' find_posts.py
+          sed -i -E 's/^VERSION = "[0-9]+.[0-9]+.[0-9]+"/VERSION = "'$VERSION'"/' find_posts.py
           git add find_posts.py 
           git commit -m "[bot] Bump version to $VERSION"
       - name: Push to repository
