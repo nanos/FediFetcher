@@ -4,6 +4,8 @@ name: Update Version number
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+  
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -16,11 +18,12 @@ jobs:
         run: |
            git config user.name nanos-bot
            git config user.email bot@thms.uk
+      #- uses: mxschmitt/action-tmate@v3
       - name: Update version number
         run: |
           VERSION=${{ github.ref_name }}
           VERSION="${VERSION:1}"
-          sed -i '' -E 's/VERSION = "[0-9]+.[0-9]+.[0-9]+"/VERSION = "'$VERSION'"/' find_posts.py  
+          sed -i -E 's/VERSION = "[0-9]+.[0-9]+.[0-9]+"/VERSION = "'$VERSION'"/' find_posts.py
           git add find_posts.py 
           git commit -m "[bot] Bump version to $VERSION"
       - name: Push to repository
