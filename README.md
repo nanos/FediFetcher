@@ -56,7 +56,7 @@ Regardless of how you want to run FediFetcher, you must first get an access toke
 
 ### 2) Configure and run FediFetcher
 
-Once you have to your access token, there are multiple ways of running FediFetcher. These include, but aren't limited to:
+Once you have to your access token, there are multiple ways of running FediFetcher. None of these require you to have CLI/SSH access to your mastodon server. These include, but aren't limited to:
 
 1. [Running FediFetcher as a GitHub Action](./docs/github-actions.md)<br>
    Ideal if you don't have your own hardware, and/or have little experience running servers. This is all point and click within GitHub's interface.
@@ -75,7 +75,7 @@ FediFetcher has quite a few configuration options, so here is my quick configura
 
 > [!CAUTION]
 >
-> **Remove the `access-token` from the `config.json`** when running FediFetcher as GitHub Action. When running FediFetcher as GitHub Action **ALWAYS** [set the Access Token as an Action Secret](#to-run-fedifetcher-as-a-github-action).
+> **Remove the `access-token` from the `config.json`** when running FediFetcher as GitHub Action. When running FediFetcher as GitHub Action **ALWAYS** [set the Access Token as an Action Secret](./docs/github-actions.md).
 
 ```json
 {

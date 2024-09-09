@@ -1,6 +1,6 @@
 # Running FediFetcher as a cron job
 
-Running FediFetcher as a cron job is in many ways the best way of running FediFetcher if you already have a linux device somewhere. This could (but doesn't need to!) be a your mastodon server, or another device (such as a Raspberry Pi).
+Running FediFetcher as a cron job is in many ways the best way of running FediFetcher if you already have a linux device somewhere. This could be a your mastodon server, or another device (such as a Raspberry Pi).
 
 Tu run FediFetcher as a cron job:
 

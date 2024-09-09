@@ -20,7 +20,7 @@ If you configure FediFetcher this way, it'll fetch missing remote replies to the
 
 ## Providing configuration options
 
-Unless you are running FediFetcher as GitHub Action (please see above for instructions on configuring FediFetcher with GitHub Actions), there are a three ways in which you provide configuration options:
+Unless you are running FediFetcher as [GitHub Action](../docs/github-actions.md), there are a three ways in which you provide configuration options:
 
 1. Configuration File: <br>
    You can provide a `json` file with configuration options. Then run the script like so: <br>`python find_posts.py -c=/path/to/config.json`
@@ -28,7 +28,6 @@ Unless you are running FediFetcher as GitHub Action (please see above for instru
    You can provide all options directly in the command line. Simply run the script with te correct options supplied: <br>`python find_posts.py --server=example.com --home-timeline-length=80`.
 3. Environment variables: <br>
    You can supply your options as environment variables. To do so take the option name from the table below, replace `-` with `_` and prefix with `FF_`. For example `max-favourites` can be set via `FF_MAX_FAVOURITES`. (Environment variables are not case sensitive.)
-
 
 
 ## Advanced Options
@@ -69,7 +68,7 @@ Option | Required? | Notes |
 
 If you wish to [run FediFetcher for multiple users on your instance](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher?utm_source=github), you can supply the `access-token` as an array, with different access tokens for different users. That will allow you to fetch replies and/or backfill profiles for multiple users on your account.
 
-This is only supported when running FediFetcher as cron job, or container. Multi-user support is not available when running FediFetcher as GitHub Action.
+Multi-user support is not available when running FediFetcher as GitHub Action.
 
 ## Required Access Token Scopes
 
