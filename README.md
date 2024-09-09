@@ -36,58 +36,9 @@ FediFetcher will pull in posts and profiles from any servers running the followi
 
 ## Setup
 
-### 1) Get the required access token:
+There are many way to configure and run FediFetcher, including as GitHub Action, cron job, container, or even from a Windows computer using the Task Schedule. None of these require CLI/SSH access to your Mastodon server.
 
-Regardless of how you want to run FediFetcher, you must first get an access token:
-
-#### If you are an Admin on your instance
-
-1. In Mastodon go to Preferences > Development > New Application
-   1. Give it a nice name
-   2. Enable the required scopes for your options. You could tick `read` and `admin:read:accounts`, or see below for a list of which scopes are required for which options.
-   3. Save
-   4. Copy the value of `Your access token`
-
-#### If you are not an Admin on your Instance
-
-1. Go to [GetAuth for Mastodon](https://getauth.thms.uk?scopes=read&client_name=FediFetcher)
-2. Type in your Mastodon instance's domain
-3. Copy the token.
-
-### 2) Configure and run FediFetcher
-
-Once you have to your access token, there are multiple ways of running FediFetcher. None of these require you to have CLI/SSH access to your mastodon server. These include, but aren't limited to:
-
-1. [Running FediFetcher as a GitHub Action](./docs/github-actions.md)<br>
-   Ideal if you don't have your own hardware, and/or have little experience running servers. This is all point and click within GitHub's interface.
-2. [Running FediFetcher as a cron job](./docs/cron-job.md)<br>
-   Ideal if you already have a linux device, and want to simply run FediFetcher on there.
-3. [Running FediFetcher from a container](./docs/container.md)<br>
-   Ideal if you are familiar with containers.
-4. [Running FediFetcher as a systemd timer](./docs/systemd.md)<br>
-   Ideal if you have a linux device somewhere, but don't like cron jobs.
-5. Running FediFetcher as a Scheduled Task in Windows<br>
-   Ideal if you are a Windows User and your main device is (almost) always running.
-
-### Configuration options
-
-FediFetcher has quite a few configuration options, so here is my quick configuration advice, that should probably work for most people:
-
-> [!CAUTION]
->
-> **Remove the `access-token` from the `config.json`** when running FediFetcher as GitHub Action. When running FediFetcher as GitHub Action **ALWAYS** [set the Access Token as an Action Secret](./docs/github-actions.md).
-
-```json
-{
-  "access-token": "Your access token",
-  "server": "your.mastodon.server",
-  "home-timeline-length": 200,
-  "max-followings": 80,
-  "from-notifications": 1
-}
-```
-
-For full configuration options and the required access token scopes, please see the [FediFetcher Configuration Options Documentation](./docs/config.md).
+For full details please [see the Documentation](https://github.com/nanos/FediFetcher/wiki)
 
 ## Acknowledgments
 
