@@ -36,8 +36,6 @@ FediFetcher will pull in posts and profiles from any servers running the followi
 
 ## Setup
 
-You can run FediFetcher either as a GitHub Action, as a scheduled cron job on your local machine/server, or from a pre-packed container.
-
 ### 1) Get the required access token:
 
 Regardless of how you want to run FediFetcher, you must first get an access token:
@@ -58,57 +56,18 @@ Regardless of how you want to run FediFetcher, you must first get an access toke
 
 ### 2) Configure and run FediFetcher
 
-Run FediFetcher as a GitHub Action, a cron job, or a container:
+Once you have to your access token, there are multiple ways of running FediFetcher. These include, but aren't limited to:
 
-#### To run FediFetcher as a GitHub Action:
-
-1. Fork this repository
-2. Add your access token:
-   1.  Go to Settings > Secrets and Variables > Actions
-   2.  Click New Repository Secret
-   3.  Supply the Name `ACCESS_TOKEN` and provide the Token generated above as Secret
-3. Create a file called `config.json` with your [configuration options](#configuration-options) in the repository root. **Do NOT include the Access Token in your `config.json`!**
-4. Finally go to the Actions tab and enable the action. The action should now automatically run approximately once every 10 min.
-
-> [!NOTE]
->
-> Keep in mind that [the schedule event can be delayed during periods of high loads of GitHub Actions workflow runs](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule).
-
-#### To run FediFetcher as a cron job:
-
-1. Clone this repository.
-2. Install requirements: `pip install -r requirements.txt`
-3. Create a `json` file with [your configuration options](#configuration-options). You may wish to store this in the `./artifacts` directory, as that directory is `.gitignore`d
-4. Then simply run this script like so: `python find_posts.py -c=./artifacts/config.json`.
-
-If desired, all configuration options can be provided as command line flags, instead of through a JSON file. An [example script](./examples/FediFetcher.sh) can be found in the `examples` folder.
-
-When using a cronjob, we are using file based locking to avoid multiple overlapping executions of the script. The timeout period for the lock can be configured using `lock-hours`.
-
-> [!TIP]
->
-> If you are running FediFetcher locally, my recommendation is to run it manually once, before turning on the cron job: The first run will be significantly slower than subsequent runs, and that will help you prevent overlapping during that first run.
-
-#### To run FediFetcher from a container:
-
-FediFetcher is also available in a pre-packaged container, [FediFetcher](https://github.com/nanos/FediFetcher/pkgs/container/fedifetcher) - Thank you [@nikdoof](https://github.com/nikdoof).
-
-1. Pull the container from `ghcr.io`, using Docker or your container tool of choice: `docker pull ghcr.io/nanos/fedifetcher:latest`
-2. Run the container, passing the configurations options as command line arguments: `docker run -it ghcr.io/nanos/fedifetcher:latest --access-token=<TOKEN> --server=<SERVER>`
-
-> [!IMPORTANT]
->
-> The same rules for running this as a cron job apply to running the container: don't overlap any executions.
-
-Persistent files are stored in `/app/artifacts` within the container, so you may want to map this to a local folder on your system.
-
-An [example Kubernetes CronJob](./examples/k8s-cronjob.md) for running the container is included in the `examples` folder.
-
-An [example Docker Compose Script](./examples/docker-compose.yaml) for running the container periodically is included in the `examples` folder.
-
-#### To run FediFetcher with systemd-timer:
-
-See [systemd.md](./examples/systemd.md)
+1. [Running FediFetcher as a GitHub Action](./docs/github-actions.md)<br>
+   Ideal if you don't have your own hardware, and/or have little experience running servers. This is all point and click within GitHub's interface.
+2. [Running FediFetcher as a cron job](./docs/cron-job.md)<br>
+   Ideal if you already have a linux device, and want to simply run FediFetcher on there.
+3. [Running FediFetcher from a container](./docs/container.md)<br>
+   Ideal if you are familiar with containers.
+4. [Running FediFetcher as a systemd timer](./docs/systemd.md)<br>
+   Ideal if you have a linux device somewhere, but don't like cron jobs.
+5. Running FediFetcher as a Scheduled Task in Windows<br>
+   Ideal if you are a Windows User and your main device is (almost) always running.
 
 ### Configuration options
 
@@ -128,79 +87,7 @@ FediFetcher has quite a few configuration options, so here is my quick configura
 }
 ```
 
-If you configure FediFetcher this way, it'll fetch missing remote replies to the last 200 posts in your home timeline. It'll additionally backfill profiles of the last 80 people you followed, and of every account who appeared in your notifications during the past hour.
-
-#### Providing configuration options
-
-Unless you are running FediFetcher as GitHub Action (please see above for instructions on configuring FediFetcher with GitHub Actions), there are a three ways in which you provide configuration options:
-
-1. Configuration File: <br>
-   You can provide a `json` file with configuration options. Then run the script like so: <br>`python find_posts.py -c=/path/to/config.json`
-2. Command line flags: <br>
-   You can provide all options directly in the command line. Simply run the script with te correct options supplied: <br>`python find_posts.py --server=example.com --home-timeline-length=80`.
-3. Environment variables: <br>
-   You can supply your options as environment variables. To do so take the option name from the table below, replace `-` with `_` and prefix with `FF_`. For example `max-favourites` can be set via `FF_MAX_FAVOURITES`. (Environment variables are not case sensitive.)
-
-
-
-#### Advanced Options
-
-Below is a list of all configuration options, including their descriptions.
-
-Option | Required? | Notes |
-|:----------------------------------------------------|-----------|:------|
-|`access-token` | Yes | The access token. If using GitHub action, this needs to be provided as a Secret called  `ACCESS_TOKEN`. If running as a cron job or a container, you can supply this option as array, to [fetch posts for multiple users](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher) on your instance. To set tokens for multiple users using environment variables, define multiple environment variables with `FF_ACCESS_TOKEN` prefix, eg. `FF_ACCESS_TOKEN_USER1=…` and `FF_ACCESS_TOKEN_USER2=…`|
-|`server`|Yes|The domain only of your mastodon server (without `https://` prefix) e.g. `mstdn.thms.uk`. |
-|`instance-blocklist` | No | A comma seperated list of instance domains that FediFetcher should never attempt to connect to. 
-|`home-timeline-length` | No | Provide to fetch remote replies to posts in the API-Key owner's home timeline. Determines how many posts we'll fetch replies for. Recommended value: `200`.
-| `max-bookmarks` | No | Provide to fetch remote replies to any posts you have bookmarked. Determines how many of your bookmarks you want to get replies to. Recommended value: `80`. Requires an access token with `read:bookmarks` scope.
-| `max-favourites` | No | Provide to fetch remote replies to any posts you have favourited. Determines how many of your favourites you want to get replies to. Recommended value: `40`. Requires an access token with `read:favourites` scope.
-| `max-followings` | No | Provide to backfill profiles for your most recent followings. Determines how many of your last followings you want to backfill. Recommended value: `80`.
-| `max-followers` | No | Provide to backfill profiles for your most recent followers. Determines how many of your last followers you want to backfill. Recommended value: `80`.
-| `max-follow-requests` | No | Provide to backfill profiles for the API key owner's most recent pending follow requests. Determines how many of your last follow requests you want to backfill. Recommended value: `80`.
-| `from-notifications` | No | Provide to backfill profiles of anyone mentioned in your recent notifications. Determines how many hours of notifications you want to look at. Requires an access token with `read:notifications` scope. Recommended value: `1`, unless you run FediFetcher less than once per hour.
-| `reply-interval-in-hours` | No | Provide to fetch remote replies to posts that have received replies from users on your own instance. Determines how far back in time we'll go to find posts that have received replies. You must be administrator on your instance to use this option, and this option is not supported on Pleroma / Akkoma and its forks. Recommend value: `0` (disabled). Requires an access token with `admin:read:accounts`.
-|`backfill-with-context` | No | Set to `0` to disable fetching remote replies while backfilling profiles. This is enabled by default, but you can disable it, if it's too slow for you.
-|`backfill-mentioned-users` | No | Set to `0` to disable backfilling any mentioned users when fetching the home timeline. This is enabled by default, but you can disable it, if it's too slow for you.
-| `from-lists`| No | Set to `1` to fetch missing replies and/or backfill account from your lists. This is disabled by default. Requires an access token with `read:lists` scope. |
-| `max-list-length` | No | Determines how many posts we'll fetch replies for in each list. Default value: `100`. This will be ignored, unless you also provide `from-lists = 1`. Set to `0` if you only want to backfill profiles in lists. |
-| `max-list-accounts` | No | Determines how many accounts we'll backfill for in each list. Default value: `10`. This will be ignored, unless you also provide `from-lists = 1`. Set to `0` if you only want to fetch replies in lists. |
-| `remember-users-for-hours` | No | How long between back-filling attempts for non-followed accounts? Defaults to `168`, i.e. one week.
-| `remember-hosts-for-days` | No | How long should FediFetcher cache host info for? Defaults to `30`.
-| `http-timeout` | No | The timeout for any HTTP requests to the Mastodon API in seconds. Defaults to `5`.
-| `lock-hours` | No | Determines after how many hours a lock file should be discarded. Not relevant when running the script as GitHub Action, as concurrency is prevented using a different mechanism. Recommended value: `24`.
-| `lock-file` | No | Location for the lock file. If not specified, will use `lock.lock` under the state directory. Not relevant when running the script as GitHub Action.
-| `state-dir` | No | Directory storing persistent files, and the default location for lock file. Not relevant when running the script as GitHub Action.
-| `on-start` | No | Optionally provide a callback URL that will be pinged when processing is starting. A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
-| `on-done` | No | Optionally provide a callback URL that will be called when processing is finished.  A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
-| `on-fail` | No | Optionally provide a callback URL that will be called when processing has failed.  A query parameter `rid={uuid}` will automatically be appended to uniquely identify each execution. This can be used to monitor your script using a service such as healthchecks.io.
-|`log-level` | No | The severity of messages to log. Possible values are `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`. Defaults to `DEBUG`. |
-|`log-format` | No | The format used for logging. See the [documentation](https://docs.python.org/3/library/logging.html) for details. Defaults to `%(asctime)s: %(message)s` |
-
-### Multi User support
-
-If you wish to [run FediFetcher for multiple users on your instance](https://blog.thms.uk/2023/04/muli-user-support-for-fedifetcher?utm_source=github), you can supply the `access-token` as an array, with different access tokens for different users. That will allow you to fetch replies and/or backfill profiles for multiple users on your account.
-
-This is only supported when running FediFetcher as cron job, or container. Multi-user support is not available when running FediFetcher as GitHub Action.
-
-### Required Access Token Scopes
-
- - For all actions, your access token must include these scopes:
-   - `read:search`
-   - `read:statuses`
-   - `read:accounts`
- - If you are supplying `reply-interval-in-hours` you must additionally enable this scope:
-   - `admin:read:accounts`
- - If you are supplying `max-follow-requests` you must additionally enable this scope:
-   - `read:follows`
- - If you are supplying `max-bookmarks` you must additionally enable this scope:
-   - `read:bookmarks`
- - If you are supplying `max-favourites` you must additionally enable this scope:
-   - `read:favourites`
- - If you are supplying `from-notifications` you must additionally enable this scope:
-   - `read:notifications`
- - If you are supplying `from-lists` you must additionally enable this scope:
-   - `read:lists`
+For full configuration options and the required access token scopes, please see the [FediFetcher Configuration Options Documentation](./docs/config.md).
 
 ## Acknowledgments
 

@@ -1,3 +1,7 @@
+# Running FediFetcher as a systemd timer.
+
+If you prefer running FediFetcher from a systemd timer you can follow these steps:
+
 1. Navigate to the directory `/opt`:
     ```bash
     cd /opt
@@ -52,7 +56,7 @@
 
     [Service]
     Type=simple
-    User=root
+    User=mastodon
     WorkingDirectory=/opt/FediFetcher
     ExecStart=/opt/fedifetcher/bin/python find_posts.py -c=artifacts/config.json
 
@@ -60,7 +64,7 @@
     WantedBy=multi-user.target
     ```
 
-11. Create a systemd timer file for FediFetcher:
+11. Create a systemd timer file for FediFetcher (replace `User=mastodon` with another user, if needed).
     ```bash
     nano /etc/systemd/system/fedifetcher.timer
     ```
