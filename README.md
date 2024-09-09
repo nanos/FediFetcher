@@ -38,7 +38,11 @@ FediFetcher will pull in posts and profiles from any servers running the followi
 
 There are many way to configure and run FediFetcher, including as GitHub Action, cron job, container, or even from a Windows computer using the Task Schedule. None of these require CLI/SSH access to your Mastodon server.
 
-For full details please [see the Documentation](https://github.com/nanos/FediFetcher/wiki)
+For full details please [see the Documentation](https://github.com/nanos/FediFetcher/wiki).
+
+## Alternatives
+
+If you don't want to run a python script, but still want to see missing replies in your timeline, the Chrome or FireFox extension [Substitoot](https://substitoot.kludge.guru) might be helpful.
 
 ## Acknowledgments
 
