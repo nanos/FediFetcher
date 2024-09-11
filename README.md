@@ -44,6 +44,10 @@ For full details please [see the Documentation](https://github.com/nanos/FediFet
 
 If you don't want to run a python script, but still want to see missing replies in your timeline, the Chrome or FireFox extension [Substitoot](https://substitoot.kludge.guru) might be helpful.
 
+## Contribute
+
+Thank you for wanting to contribute to FediFetcher! Please have a look at our [Contribution to FediFetcher Guide](https://github.com/nanos/FediFetcher/wiki/Contribute-To-FediFetcher) to get started.
+
 ## Acknowledgments
 
 The original inspiration of this script, as well as parts of its implementation were taken from [Abhinav Sarkar](https://notes.abhinavsarkar.net/2023/mastodon-context). Thank you Abhinav!
