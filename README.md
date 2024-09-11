@@ -46,7 +46,7 @@ If you don't want to run a python script, but still want to see missing replies 
 
 ## Contribute
 
-Thank you for wanting to contribute to FediFetcher! Please have a look at our [Contribution to FediFetcher Guide](https://github.com/nanos/FediFetcher/wiki/Contribute-To-FediFetcher) to get started.
+Thank you for wanting to contribute to FediFetcher! Please have a look at our [Contributing to FediFetcher Guide](https://github.com/nanos/FediFetcher/wiki/Contribute-To-FediFetcher) to get started.
 
 ## Acknowledgments
 
