@@ -10,8 +10,6 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
       - name: 'Update Version number'
         run: |
           git clone https://${{ secrets.WIKI_ACTION_TOKEN }}@github.com/nanos/FediFetcher.git
@@ -23,4 +21,6 @@ jobs:
           sed -i -E 's/VERSION = "[0-9]+.[0-9]+.[0-9]+"/VERSION = "'$VERSION'"/' find_posts.py
           git add find_posts.py 
           git commit -m "[bot] Bump version to $VERSION"
-          git push upstream HEAD:main > /dev/null 2>&1
+          git push origin HEAD:main > /dev/null 2>&1
+          git tag -f "v$VERSION"
+          git push -f origin "v$VERSION" > /dev/null 2>&1
