@@ -10,21 +10,15 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout original repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Setup Git
+      - name: 'Update Version number'
         run: |
-           git config user.name nanos-bot
-           git config user.email bot@thms.uk
-      #- uses: mxschmitt/action-tmate@v3
-      - name: Update version number
-        run: |
+          git clone https://${{ secrets.WIKI_ACTION_TOKEN }}@github.com/nanos/FediFetcher.git
+          cd FediFetcher
+          git config user.name nanos-bot
+          git config user.email bot@thms.uk
           VERSION=${{ github.ref_name }}
           VERSION="${VERSION:1}"
           sed -i -E 's/VERSION = "[0-9]+.[0-9]+.[0-9]+"/VERSION = "'$VERSION'"/' find_posts.py
           git add find_posts.py 
           git commit -m "[bot] Bump version to $VERSION"
-      - name: Push to repository
-        run: git push --quiet
+          git push upstream HEAD:master > /dev/null 2>&1
