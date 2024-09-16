@@ -10,6 +10,8 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: 'Update Version number'
         run: |
           git clone https://${{ secrets.WIKI_ACTION_TOKEN }}@github.com/nanos/FediFetcher.git
