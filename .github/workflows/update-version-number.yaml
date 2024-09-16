@@ -21,4 +21,4 @@ jobs:
           sed -i -E 's/VERSION = "[0-9]+.[0-9]+.[0-9]+"/VERSION = "'$VERSION'"/' find_posts.py
           git add find_posts.py 
           git commit -m "[bot] Bump version to $VERSION"
-          git push upstream HEAD:master > /dev/null 2>&1
+          git push upstream HEAD:main > /dev/null 2>&1
