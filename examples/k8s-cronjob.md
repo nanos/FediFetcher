@@ -38,6 +38,10 @@ spec:
                   value: "200"
                 - name: FF_MAX_FOLLOWERS
                   value: "10"
+                # Add any other options below as described in in the README.md file
+    
+                # If you don't want to use a PVC you may comment the next two lines, but that will significantly 
+                # affect performance, and is NOT recommended
                 - name: FF_STATE_DIR
                   value: "/data/"
                 - name: FF_SERVER
@@ -50,6 +54,8 @@ spec:
                     secretKeyRef:
                       name: fedifetcher
                       key: token
+        # Comment the lines below if you do not use a PVC, but that will significantly 
+        # affect performance and is NOT recommended
               volumeMounts:
                 - name: fedifetcher-storage
                   mountPath: /data
