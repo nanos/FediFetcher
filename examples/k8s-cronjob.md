@@ -12,6 +12,21 @@ kubectl create secret generic fedifetcher \
     --from-literal=token="<token>"
 ```
 
+Define a PVC, for example:
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fedifetcher-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+```
+
 Now define the cronjob, and don't forget to define your PVCs:
 
 ```yaml
