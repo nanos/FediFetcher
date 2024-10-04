@@ -4,7 +4,8 @@ services:
     stdin_open: true
     tty: true
     image: ghcr.io/nanos/fedifetcher:latest
-    command: "--access-token=<TOKEN> --server=<SERVER>"
+    # We override the Dockerfile entrypoint, run the python code with our commands, then append our sleep command.
+    entrypoint: ["sh", "-c", "python /app/find_posts.py --access-token=<TOKEN> --server=<SERVER>; sleep 3600; "]
     # Persist our data
     volumes:
       - ./data:/app/artifacts
@@ -15,5 +16,3 @@ services:
       restart_policy:
         # The `any` condition means even after successful runs, we'll restart the script
         condition: any
-        # Specify how often the script should run - for example; after 1 hour.
-        delay: 1h
