@@ -69,11 +69,13 @@ spec:
                     secretKeyRef:
                       name: fedifetcher
                       key: token
+                      optional: false
         # Comment the lines below if you do not use a PVC, but that will significantly 
         # affect performance and is NOT recommended
               volumeMounts:
                 - name: fedifetcher-storage
                   mountPath: /data
+                  readOnly: false 
           volumes:
             - name: fedifetcher-storage
               persistentVolumeClaim:
