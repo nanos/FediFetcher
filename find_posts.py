@@ -301,9 +301,11 @@ def filter_known_users(users, known_users):
         users
     ))
 
-def get_new_followers(server, user_id, max, known_followers):
+def get_new_followers(server, user_id, access_token, max, known_followers):
     """Get any new followings for the specified user, up to the max number provided"""
-    followers = get_paginated_mastodon(f"https://{server}/api/v1/accounts/{user_id}/followers", max)
+    followers = get_paginated_mastodon(f"https://{server}/api/v1/accounts/{user_id}/followers", max, {
+        "Authorization": f"Bearer {access_token}",
+    })
 
     # Remove any we already know about
     new_followers = filter_known_users(followers, known_followers)
@@ -312,9 +314,11 @@ def get_new_followers(server, user_id, max, known_followers):
 
     return new_followers
 
-def get_new_followings(server, user_id, max, known_followings):
+def get_new_followings(server, user_id, access_token, max, known_followings):
     """Get any new followings for the specified user, up to the max number provided"""
-    following = get_paginated_mastodon(f"https://{server}/api/v1/accounts/{user_id}/following", max)
+    following = get_paginated_mastodon(f"https://{server}/api/v1/accounts/{user_id}/following", max, {
+        "Authorization": f"Bearer {access_token}",
+    })
 
     # Remove any we already know about
     new_followings = filter_known_users(following, known_followings)
@@ -1698,13 +1702,13 @@ if __name__ == "__main__":
             if arguments.max_followings > 0:
                 logger.info(f"Getting posts from last {arguments.max_followings} followings")
                 user_id = get_user_id(arguments.server, arguments.user, token)
-                followings = get_new_followings(arguments.server, user_id, arguments.max_followings, all_known_users)
+                followings = get_new_followings(arguments.server, user_id, token, arguments.max_followings, all_known_users)
                 add_user_posts(arguments.server, token, followings, known_followings, all_known_users, seen_urls, seen_hosts)
 
             if arguments.max_followers > 0:
                 logger.info(f"Getting posts from last {arguments.max_followers} followers")
                 user_id = get_user_id(arguments.server, arguments.user, token)
-                followers = get_new_followers(arguments.server, user_id, arguments.max_followers, all_known_users)
+                followers = get_new_followers(arguments.server, user_id, token, arguments.max_followers, all_known_users)
                 add_user_posts(arguments.server, token, followers, recently_checked_users, all_known_users, seen_urls, seen_hosts)
 
             if arguments.max_follow_requests > 0:
