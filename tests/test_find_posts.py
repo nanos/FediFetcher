@@ -448,14 +448,17 @@ def test_get_new_followers(
 
     server = "server"
     user_id = 1
+    access_token = "access_token"
     max = 50
     known_followers = ["follower1"]
 
     expected_result = ["follower2", "follower3"]
-    result = find_posts.get_new_followers(server, user_id, max, known_followers)
+    result = find_posts.get_new_followers(server, user_id, access_token, max, known_followers)
 
     mock_get_paginated_mastodon.assert_called_once_with(
-        f"https://{server}/api/v1/accounts/{user_id}/followers", max
+        f"https://{server}/api/v1/accounts/{user_id}/followers", max, {
+            "Authorization": f"Bearer {access_token}",
+        },
     )
     mock_filter_known_users.assert_called_once_with(
         ["follower1", "follower2", "follower3"], known_followers
@@ -473,9 +476,11 @@ def test_get_new_followings(
 ):
     mock_get_paginated_mastodon.return_value = ["user1", "user2", "user3"]
     mock_filter_known_users.return_value = ["user1", "user2"]
-    result = get_new_followings("server", "100", 5, "known_users")
+    result = get_new_followings("server", "100", "access_token", 5, "known_users")
     mock_get_paginated_mastodon.assert_called_with(
-        "https://server/api/v1/accounts/100/following", 5
+        "https://server/api/v1/accounts/100/following", 5, {
+            "Authorization": "Bearer access_token",
+        }
     )
     mock_filter_known_users.assert_called_with(
         ["user1", "user2", "user3"], "known_users"
