@@ -22,7 +22,7 @@ jobs:
          cache: 'pip' # caching pip dependencies
       - run: pip install -r requirements.txt
       - name: Download all workflow run artifacts
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v6
         with:
           name: artifacts
           workflow: get_context.yml
