@@ -1442,15 +1442,15 @@ def report_mastodon_error(error_message, error_code, access_token, required_scop
     subline = ""
     match error_code:
         case 401:
-            subline = "Ensure your access token is correct"
+            subline = "\nIt looks like your access token is incorrect. Consider generating a new access token, and/or ensure you have copy and pasted the whole token correctly."
         case 403:
             if(required_scope != ""):
-                subline = f"Make sure you have the {required_scope} scope enabled for your access token."
+                subline = f"\nAdd the {required_scope} scope to your access token, and regenerate the token."
             else:
-                subline = "Make sure you have enabled the required scope for your token"
+                subline = "\nMake sure you have enabled the required scope(s) for your token."
 
     raise Exception(
-        f"{error_message} for token {access_token[:+5] + '*' * (len(access_token) - 10) + access_token[-5:]}. Status code: {error_code} "
+        f"{error_message} with token {access_token[:+5]}{'*' * (len(access_token) - 10)}{access_token[-5:]}. Status code: {error_code} "
         f"{subline}"
     )
 
