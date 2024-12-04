@@ -367,19 +367,12 @@ def get_timeline(server, access_token, max):
 
         if response.status_code == 200:
             toots = response.json()
-        elif response.status_code == 401:
-            raise Exception(
-                f"Error getting URL {url}. Status code: {response.status_code}. "
-                "Ensure your access token is correct"
-            )
-        elif response.status_code == 403:
-            raise Exception(
-                f"Error getting URL {url}. Status code: {response.status_code}. "
-                "Make sure you have the read:statuses scope enabled for your access token."
-            )
         else:
-            raise Exception(
-                f"Error getting URL {url}. Status code: {response.status_code}"
+            report_mastodon_error(
+                f"Error getting URL {url}",
+                response.status_code,
+                access_token,
+                "read:statuses"
             )
 
         # Paginate as needed
@@ -401,19 +394,12 @@ def get_toots(url, access_token):
 
     if response.status_code == 200:
         return response
-    elif response.status_code == 401:
-        raise Exception(
-            f"Error getting URL {url}. Status code: {response.status_code}. "
-            "It looks like your access token is incorrect."
-        )
-    elif response.status_code == 403:
-        raise Exception(
-            f"Error getting URL {url}. Status code: {response.status_code}. "
-            "Make sure you have the read:statuses scope enabled for your access token."
-        )
     else:
-        raise Exception(
-            f"Error getting URL {url}. Status code: {response.status_code}"
+        report_mastodon_error(
+            f"Error getting URL {url}",
+            response.status_code,
+            access_token,
+            "read:statuses"
         )
 
 def get_active_user_ids(server, access_token, reply_interval_hours):
@@ -432,19 +418,12 @@ def get_active_user_ids(server, access_token, reply_interval_hours):
                 if last_active > since:
                     logger.info(f"Found active user: {user['username']}")
                     yield user["id"]
-    elif resp.status_code == 401:
-        raise Exception(
-            f"Error getting user IDs on server {server}. Status code: {resp.status_code}. "
-            "Ensure your access token is correct"
-        )
-    elif resp.status_code == 403:
-        raise Exception(
-            f"Error getting user IDs on server {server}. Status code: {resp.status_code}. "
-            "Make sure you have the admin:read:accounts scope enabled for your access token."
-        )
     else:
-        raise Exception(
-            f"Error getting user IDs on server {server}. Status code: {resp.status_code}"
+        report_mastodon_error(
+            f"Error getting user IDs on server {server}",
+            resp.status_code,
+            access_token,
+            "admin:read:accounts"
         )
 
 
@@ -491,15 +470,13 @@ def get_reply_toots(user_id, server, access_token, seen_urls, reply_since):
         for toot in toots:
             logger.debug(f"Found reply toot: {toot['url']}")
         return toots
-    elif resp.status_code == 403:
-        raise Exception(
-            f"Error getting replies for user {user_id} on server {server}. Status code: {resp.status_code}. "
-            "Make sure you have the read:statuses scope enabled for your access token."
+    else:
+        report_mastodon_error(
+            f"Error getting replies for user {user_id} on server {server}",
+            resp.status_code,
+            access_token,
+            "read:statuses"
         )
-
-    raise Exception(
-        f"Error getting replies for user {user_id} on server {server}. Status code: {resp.status_code}"
-    )
 
 
 def toot_context_can_be_fetched(toot):
@@ -1033,20 +1010,11 @@ def get_paginated_mastodon(url, max, headers = {}, timeout = 0, max_tries = 5):
     response = get(furl, headers, timeout, max_tries)
 
     if response.status_code != 200:
-        if response.status_code == 401:
-            raise Exception(
-                f"Error getting URL {url}. Status code: {response.status_code}. "
-                "Ensure your access token is correct"
-            )
-        elif response.status_code == 403:
-            raise Exception(
-                f"Error getting URL {url}. Status code: {response.status_code}. "
-                "Make sure you have the correct scopes enabled for your access token."
-            )
-        else:
-            raise Exception(
-                f"Error getting URL {url}. Status code: {response.status_code}"
-            )
+        report_mastodon_error(
+            f"Error getting URL {url}",
+            response.status_code,
+            headers.get('Authorization', '').replace("Bearer ", ""),
+        )
 
     result = response.json()
 
@@ -1469,6 +1437,22 @@ def fetch_timeline_context(timeline_posts, token, parsed_urls, seen_hosts, seen_
                     mentioned_users.append(user)
 
         add_user_posts(arguments.server, token, filter_known_users(mentioned_users, all_known_users), recently_checked_users, all_known_users, seen_urls, seen_hosts)
+
+def report_mastodon_error(error_message, error_code, access_token, required_scope = ''):
+    subline = ""
+    match error_code:
+        case 401:
+            subline = "\nIt looks like your access token is incorrect. Consider generating a new access token, and/or ensure you have copy and pasted the whole token correctly."
+        case 403:
+            if(required_scope != ""):
+                subline = f"\nAdd the {required_scope} scope to your access token, and regenerate the token."
+            else:
+                subline = "\nMake sure you have enabled the required scope(s) for your token."
+
+    raise Exception(
+        f"{error_message} with token {access_token[:+5]}{'*' * (len(access_token) - 10)}{access_token[-5:]}. Status code: {error_code} "
+        f"{subline}"
+    )
 
 if __name__ == "__main__":
     start = datetime.now()
