@@ -1503,7 +1503,7 @@ if __name__ == "__main__":
     if tokens := [token for envvar, token in os.environ.items() if envvar.lower().startswith("ff_access_token")]:
         arguments.access_token = tokens
 
-    logger.info("Starting FediFetcher")
+    logger.info(f"Starting FediFetcher v{VERSION}")
 
     if(arguments.server == None or arguments.access_token == None):
         logger.critical("You must supply at least a server name and an access token")
