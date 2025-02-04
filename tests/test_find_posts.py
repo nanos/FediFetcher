@@ -46,7 +46,7 @@ from src.nanos.fedi_fetcher.find_posts import (
 
 
 
-@patch("find_posts.get_paginated_mastodon")
+@patch("src.nanos.fedi_fetcher.find_posts.get_paginated_mastodon")
 def test_get_bookmarks(mock_get_paginated_mastodon):
     server = "test_server"
     access_token = "test_token"
@@ -71,7 +71,7 @@ def test_get_bookmarks(mock_get_paginated_mastodon):
     ],
 )
 def test_get_bookmarks_parameterized(server, access_token, max):
-    with patch("find_posts.get_paginated_mastodon") as mock_get_paginated_mastodon:
+    with patch("src.nanos.fedi_fetcher.find_posts.get_paginated_mastodon") as mock_get_paginated_mastodon:
         get_bookmarks(server, access_token, max)
         mock_get_paginated_mastodon.assert_called_once_with(
             f"https://{server}/api/v1/bookmarks",
@@ -82,7 +82,7 @@ def test_get_bookmarks_parameterized(server, access_token, max):
         )
 
 
-@patch("find_posts.get_paginated_mastodon")
+@patch("src.nanos.fedi_fetcher.find_posts.get_paginated_mastodon")
 def test_get_favourites(mock_get_paginated_mastodon):
     server = "some.server"
     access_token = "token123"
@@ -103,9 +103,9 @@ def test_get_favourites(mock_get_paginated_mastodon):
     assert result == expected_result
 
 
-@patch("find_posts.get_user_posts")
-@patch("find_posts.add_post_with_context")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get_user_posts")
+@patch("src.nanos.fedi_fetcher.find_posts.add_post_with_context")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_add_user_posts(mock_logger, mock_add_post, mock_get_posts):
     server = "test_server"
     access_token = "test_token"
@@ -144,9 +144,9 @@ def test_add_user_posts(mock_logger, mock_add_post, mock_get_posts):
     mock_logger.info.assert_called_with("Added 2 posts for user user1 with 0 errors")
 
 
-@patch("find_posts.get_user_posts")
-@patch("find_posts.add_post_with_context")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get_user_posts")
+@patch("src.nanos.fedi_fetcher.find_posts.add_post_with_context")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_add_user_posts_with_no_new_posts(mock_logger, mock_add_post, mock_get_posts):
     server = "test_server"
     access_token = "test_token"
@@ -184,13 +184,13 @@ def test_add_user_posts_with_no_new_posts(mock_logger, mock_add_post, mock_get_p
 @pytest.fixture
 def mock_functions():
     with patch(
-        "find_posts.add_context_url", return_value=True
+        "src.nanos.fedi_fetcher.find_posts.add_context_url", return_value=True
     ) as add_context_url, patch(
-        "find_posts.parse_url", return_value=None
+        "src.nanos.fedi_fetcher.find_posts.parse_url", return_value=None
     ) as parse_url, patch(
-        "find_posts.get_all_known_context_urls", return_value=[]
+        "src.nanos.fedi_fetcher.find_posts.get_all_known_context_urls", return_value=[]
     ) as get_all_known_context_urls, patch(
-        "find_posts.add_context_urls"
+        "src.nanos.fedi_fetcher.find_posts.add_context_urls"
     ) as add_context_urls:
         yield add_context_url, parse_url, get_all_known_context_urls, add_context_urls
 
@@ -233,8 +233,8 @@ def userName():
 
 
 def test_get_user_posts_mastodon_success(userName, webserver):
-    with patch("find_posts.get_user_id") as mock_get_user_id, patch(
-        "find_posts.get"
+    with patch("src.nanos.fedi_fetcher.find_posts.get_user_id") as mock_get_user_id, patch(
+        "src.nanos.fedi_fetcher.find_posts.get"
     ) as mock_get:
 
         # Mocking get_user_id
@@ -251,8 +251,8 @@ def test_get_user_posts_mastodon_success(userName, webserver):
 
 
 def test_get_user_posts_mastodon_user_not_found(userName, webserver):
-    with patch("find_posts.get_user_id") as mock_get_user_id, patch(
-        "find_posts.get"
+    with patch("src.nanos.fedi_fetcher.find_posts.get_user_id") as mock_get_user_id, patch(
+        "src.nanos.fedi_fetcher.find_posts.get"
     ) as mock_get:
 
         # Mocking get_user_id
@@ -268,8 +268,8 @@ def test_get_user_posts_mastodon_user_not_found(userName, webserver):
 
 
 def test_get_user_posts_mastodon_error_status_code(userName, webserver):
-    with patch("find_posts.get_user_id") as mock_get_user_id, patch(
-        "find_posts.get"
+    with patch("src.nanos.fedi_fetcher.find_posts.get_user_id") as mock_get_user_id, patch(
+        "src.nanos.fedi_fetcher.find_posts.get"
     ) as mock_get:
 
         # Mocking get_user_id
@@ -284,8 +284,8 @@ def test_get_user_posts_mastodon_error_status_code(userName, webserver):
         assert result == None
 
 
-@patch("find_posts.get")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_user_posts_lemmy_community(mock_logger, mock_get):
     mock_response = Mock()
     mock_response.status_code = 200
@@ -303,8 +303,8 @@ def test_get_user_posts_lemmy_community(mock_logger, mock_get):
     mock_logger.error.assert_not_called()
 
 
-@patch("find_posts.get")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_user_posts_lemmy_user(mock_logger, mock_get):
     mock_response = Mock()
     mock_response.status_code = 200
@@ -328,8 +328,8 @@ def test_get_user_posts_lemmy_user(mock_logger, mock_get):
     mock_logger.error.assert_not_called()
 
 
-@patch("find_posts.get")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_user_posts_peertube(mock_logger, mock_get):
     mock_response = Mock()
     mock_response.status_code = 200
@@ -345,8 +345,8 @@ def test_get_user_posts_peertube(mock_logger, mock_get):
     mock_logger.error.assert_not_called()
 
 
-@patch("find_posts.post")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.post")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_user_posts_misskey(mock_logger, mock_post):
     mock_response = mock_post.return_value
     mock_response.status_code = 200
@@ -364,9 +364,9 @@ def test_get_user_posts_misskey(mock_logger, mock_post):
     assert result is not None
 
 
-@patch("find_posts.get_paginated_mastodon")
-@patch("find_posts.filter_known_users")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get_paginated_mastodon")
+@patch("src.nanos.fedi_fetcher.find_posts.filter_known_users")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_new_follow_requests(
     mock_logger, mock_filter_known_users, mock_get_paginated_mastodon
 ):
@@ -437,9 +437,9 @@ def test_filter_known_users_no_users():
     assert filtered_users == []
 
 
-@patch("find_posts.get_paginated_mastodon")
-@patch("find_posts.filter_known_users")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get_paginated_mastodon")
+@patch("src.nanos.fedi_fetcher.find_posts.filter_known_users")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_new_followers(
     mock_logger, mock_filter_known_users, mock_get_paginated_mastodon
 ):
@@ -468,9 +468,9 @@ def test_get_new_followers(
     assert result == expected_result
 
 
-@patch("find_posts.get_paginated_mastodon")
-@patch("find_posts.filter_known_users")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get_paginated_mastodon")
+@patch("src.nanos.fedi_fetcher.find_posts.filter_known_users")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_new_followings(
     mock_logger, mock_filter_known_users, mock_get_paginated_mastodon
 ):
@@ -489,7 +489,7 @@ def test_get_new_followings(
     mock_logger.info.assert_called_with("Got 3 followings, 2 of which are new")
 
 
-@patch("find_posts.get")
+@patch("src.nanos.fedi_fetcher.find_posts.get")
 def test_get_user_id_with_username(mock_get):
     mock_response = MagicMock()
     mock_response.status_code = 200
@@ -502,7 +502,7 @@ def test_get_user_id_with_username(mock_get):
     assert result == "123"
 
 
-@patch("find_posts.get")
+@patch("src.nanos.fedi_fetcher.find_posts.get")
 def test_get_user_id_with_access_token(mock_get):
     mock_response = MagicMock()
     mock_response.status_code = 200
@@ -526,7 +526,7 @@ def test_get_user_id_with_no_user_or_token():
         get_user_id("server")
 
 
-@patch("find_posts.get")
+@patch("src.nanos.fedi_fetcher.find_posts.get")
 def test_get_user_id_with_404_status_code(mock_get):
     mock_response = MagicMock()
     mock_response.status_code = 404
@@ -537,7 +537,7 @@ def test_get_user_id_with_404_status_code(mock_get):
         get_user_id("server", user="test_user")
 
 
-@patch("find_posts.get")
+@patch("src.nanos.fedi_fetcher.find_posts.get")
 def test_get_user_id_with_non_200_or_404_status_code(mock_get):
     mock_response = MagicMock()
     mock_response.status_code = 500
@@ -551,7 +551,7 @@ def test_get_user_id_with_non_200_or_404_status_code(mock_get):
         get_user_id("server", user="test_user")
 
 
-@patch("find_posts.get_toots")
+@patch("src.nanos.fedi_fetcher.find_posts.get_toots")
 def test_get_timeline(mock_get_toots):
     mock_response = MagicMock()
     mock_response.status_code = 200
@@ -565,7 +565,7 @@ def test_get_timeline(mock_get_toots):
     assert len(timeline) == 3
 
 
-@patch("find_posts.get", autospec=True)
+@patch("src.nanos.fedi_fetcher.find_posts.get", autospec=True)
 def test_get_reply_toots_error_status_code(mock_get):
     mock_resp = Mock()
     mock_resp.status_code = 403
@@ -584,7 +584,7 @@ def test_get_reply_toots_error_status_code(mock_get):
         )
 
 
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_toot_context_can_be_fetched_public(mock_logger):
     toot = {"visibility": "public", "uri": "sample_uri"}
     result = find_posts.toot_context_can_be_fetched(toot)
@@ -592,7 +592,7 @@ def test_toot_context_can_be_fetched_public(mock_logger):
     mock_logger.debug.assert_not_called()
 
 
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_toot_context_can_be_fetched_unlisted(mock_logger):
     toot = {"visibility": "unlisted", "uri": "sample_uri"}
     result = find_posts.toot_context_can_be_fetched(toot)
@@ -600,7 +600,7 @@ def test_toot_context_can_be_fetched_unlisted(mock_logger):
     mock_logger.debug.assert_not_called()
 
 
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_toot_context_can_be_fetched_private(mock_logger):
     toot = {"visibility": "private", "uri": "sample_uri"}
     result = find_posts.toot_context_can_be_fetched(toot)
@@ -625,12 +625,12 @@ toot_with_new_uri = {
 recently_checked_context = {"existing_uri": toot_with_existing_uri}
 
 
-@patch("find_posts.toot_has_parseable_url")
-@patch("find_posts.parse_url")
-@patch("find_posts.toot_context_can_be_fetched")
-@patch("find_posts.toot_context_should_be_fetched")
-@patch("find_posts.get_toot_context")
-@patch("find_posts.logger", new_callable=Mock())
+@patch("src.nanos.fedi_fetcher.find_posts.toot_has_parseable_url")
+@patch("src.nanos.fedi_fetcher.find_posts.parse_url")
+@patch("src.nanos.fedi_fetcher.find_posts.toot_context_can_be_fetched")
+@patch("src.nanos.fedi_fetcher.find_posts.toot_context_should_be_fetched")
+@patch("src.nanos.fedi_fetcher.find_posts.get_toot_context")
+@patch("src.nanos.fedi_fetcher.find_posts.logger", new_callable=Mock())
 def test_get_all_known_context_urls(
     mock_logger,
     get_toot_context,
@@ -680,7 +680,7 @@ def test_get_all_known_context_urls(
 def test_toot_has_parseable_url_with_parseable_url():
     toot = {"url": "http://test.com", "reblog": None}
     parsed_urls = []
-    with patch("find_posts.parse_url", return_value="something") as mock_parse_url:
+    with patch("src.nanos.fedi_fetcher.find_posts.parse_url", return_value="something") as mock_parse_url:
         assert find_posts.toot_has_parseable_url(toot, parsed_urls)
         mock_parse_url.assert_called_once_with("http://test.com", parsed_urls)
 
@@ -688,7 +688,7 @@ def test_toot_has_parseable_url_with_parseable_url():
 def test_toot_has_parseable_url_with_unparseable_url():
     toot = {"url": "http://test.com", "reblog": None}
     parsed_urls = []
-    with patch("find_posts.parse_url", return_value=None) as mock_parse_url:
+    with patch("src.nanos.fedi_fetcher.find_posts.parse_url", return_value=None) as mock_parse_url:
         assert not find_posts.toot_has_parseable_url(toot, parsed_urls)
         mock_parse_url.assert_called_once_with("http://test.com", parsed_urls)
 
@@ -704,7 +704,7 @@ def test_get_replied_toot_server_id_no_url_redirect():
         "in_reply_to_account_id": "1",
         "mentions": [{"id": "1", "acct": "account"}],
     }
-    with patch("find_posts.get_redirect_url", return_value=None):
+    with patch("src.nanos.fedi_fetcher.find_posts.get_redirect_url", return_value=None):
         assert find_posts.get_replied_toot_server_id("server", toot, {}, {}) is None
 
 
@@ -714,8 +714,8 @@ def test_get_replied_toot_server_id_with_url_redirect():
         "in_reply_to_account_id": "1",
         "mentions": [{"id": "1", "acct": "account"}],
     }
-    with patch("find_posts.get_redirect_url", return_value="redirect_url"), patch(
-        "find_posts.parse_url", return_value="match"
+    with patch("src.nanos.fedi_fetcher.find_posts.get_redirect_url", return_value="redirect_url"), patch(
+        "src.nanos.fedi_fetcher.find_posts.parse_url", return_value="match"
     ) as mock_parse:
         assert find_posts.get_replied_toot_server_id("server", toot, {}, {}) == (
             "redirect_url",
@@ -737,12 +737,12 @@ def test_get_replied_toot_server_id_with_existing_replied_toot_server_ids():
     ) == ("url", "match")
 
 
-@patch("find_posts.parse_mastodon_profile_url")
-@patch("find_posts.parse_pleroma_profile_url")
-@patch("find_posts.parse_lemmy_profile_url")
-@patch("find_posts.parse_peertube_profile_url")
-@patch("find_posts.parse_pixelfed_profile_url")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.parse_mastodon_profile_url")
+@patch("src.nanos.fedi_fetcher.find_posts.parse_pleroma_profile_url")
+@patch("src.nanos.fedi_fetcher.find_posts.parse_lemmy_profile_url")
+@patch("src.nanos.fedi_fetcher.find_posts.parse_peertube_profile_url")
+@patch("src.nanos.fedi_fetcher.find_posts.parse_pixelfed_profile_url")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_parse_user_url(
     mock_logger,
     mock_parse_pixelfed,
@@ -852,7 +852,7 @@ def test_parse_mastodon_uri():
     assert parse_mastodon_uri(uri) == None
 
 
-@patch("find_posts.get_redirect_url")
+@patch("src.nanos.fedi_fetcher.find_posts.get_redirect_url")
 def test_parse_pleroma_url(mock_get_redirect_url):
     mock_get_redirect_url.return_value = "/notice/123"
 
@@ -1060,8 +1060,8 @@ def test_parse_peertube_profile_url_none():
         parse_peertube_profile_url(None)
 
 
-@patch("find_posts.requests")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.requests")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_redirect_url_success(mock_logger, mock_requests):
     response = Response()
     response.status_code = 200
@@ -1071,8 +1071,8 @@ def test_get_redirect_url_success(mock_logger, mock_requests):
     mock_logger.debug.assert_not_called()
 
 
-@patch("find_posts.requests")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.requests")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_redirect_url_redirected(mock_logger, mock_requests):
     response = Response()
     response.status_code = 302
@@ -1083,8 +1083,8 @@ def test_get_redirect_url_redirected(mock_logger, mock_requests):
     mock_logger.debug.assert_called_once()
 
 
-@patch("find_posts.requests")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.requests")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_redirect_url_error_status_code(mock_logger, mock_requests):
     response = Response()
     response.status_code = 500
@@ -1094,8 +1094,8 @@ def test_get_redirect_url_error_status_code(mock_logger, mock_requests):
     mock_logger.debug.assert_not_called()
 
 
-@patch("find_posts.requests")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.requests")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_redirect_url_exception(mock_logger, mock_requests):
     mock_requests.head.side_effect = requests.exceptions.RequestException
     assert find_posts.get_redirect_url("https://test.com") is None
@@ -1103,8 +1103,8 @@ def test_get_redirect_url_exception(mock_logger, mock_requests):
     mock_logger.debug.assert_not_called()
 
 
-@patch("find_posts.get_server_info")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get_server_info")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_toot_context_no_server_info(mock_logger, mock_server_info):
     mock_server_info.return_value = None
     assert get_toot_context("server1", "toot1", "url1", {}) == []
@@ -1129,8 +1129,8 @@ def mock_response_fail():
     return return_value
 
 
-@patch("find_posts.get")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_mastodon_urls_request_fail(mock_logger, mock_get, mock_response_fail):
     mock_get.return_value = mock_response_fail
 
@@ -1142,8 +1142,8 @@ def test_get_mastodon_urls_request_fail(mock_logger, mock_get, mock_response_fai
     mock_logger.error.assert_called_once()
 
 
-@patch("find_posts.get")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_mastodon_urls_exception(mock_logger, mock_get):
     mock_get.side_effect = Exception("Test exception")
 
@@ -1155,9 +1155,9 @@ def test_get_mastodon_urls_exception(mock_logger, mock_get):
     mock_logger.error.assert_called_once()
 
 
-@patch("find_posts.get_lemmy_comment_context")
-@patch("find_posts.get_lemmy_comments_urls")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get_lemmy_comment_context")
+@patch("src.nanos.fedi_fetcher.find_posts.get_lemmy_comments_urls")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_lemmy_urls_comment(
     mock_logger, mock_get_lemmy_comments_urls, mock_get_lemmy_comment_context
 ):
@@ -1171,9 +1171,9 @@ def test_get_lemmy_urls_comment(
     mock_logger.error.assert_not_called()
 
 
-@patch("find_posts.get_lemmy_comment_context")
-@patch("find_posts.get_lemmy_comments_urls")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get_lemmy_comment_context")
+@patch("src.nanos.fedi_fetcher.find_posts.get_lemmy_comments_urls")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_lemmy_urls_post(
     mock_logger, mock_get_lemmy_comments_urls, mock_get_lemmy_comment_context
 ):
@@ -1187,9 +1187,9 @@ def test_get_lemmy_urls_post(
     mock_logger.error.assert_not_called()
 
 
-@patch("find_posts.get_lemmy_comment_context")
-@patch("find_posts.get_lemmy_comments_urls")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get_lemmy_comment_context")
+@patch("src.nanos.fedi_fetcher.find_posts.get_lemmy_comments_urls")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_lemmy_urls_else(
     mock_logger, mock_get_lemmy_comments_urls, mock_get_lemmy_comment_context
 ):
@@ -1205,8 +1205,8 @@ def test_get_lemmy_urls_else(
     mock_logger.error.assert_called_once_with(f"unknown lemmy url type {toot_url}")
 
 
-@patch("find_posts.get")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_lemmy_comment_context_get_fail(mock_logger, mock_get):
     mock_get.side_effect = Exception
 
@@ -1221,8 +1221,8 @@ def test_get_lemmy_comment_context_get_fail(mock_logger, mock_get):
     mock_logger.error.assert_called_once()
 
 
-@patch("find_posts.get")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_lemmy_comment_context_parse_fail(mock_logger, mock_get):
     mock_get.return_value.status_code = 200
     mock_get.return_value.json.return_value = {"invalid_key": "invalid_value"}
@@ -1239,7 +1239,7 @@ def test_get_lemmy_comment_context_parse_fail(mock_logger, mock_get):
 
 
 def test_get_peertube_urls_success():
-    with patch("find_posts.get") as mock_get:
+    with patch("src.nanos.fedi_fetcher.find_posts.get") as mock_get:
         mock_resp = Response()
         mock_resp.status_code = 200
         mock_resp._content = json.dumps(
@@ -1255,9 +1255,9 @@ def test_get_peertube_urls_success():
         assert urls == ["http://example.com/1", "http://example.com/2"]
 
 
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_peertube_urls_exception(mock_logger):
-    with patch("find_posts.get") as mock_get:
+    with patch("src.nanos.fedi_fetcher.find_posts.get") as mock_get:
         mock_get.side_effect = Exception("Test exception")
 
         urls = get_peertube_urls("example.com", "123", "http://toot_url.com")
@@ -1271,8 +1271,8 @@ def test_get_peertube_urls_exception(mock_logger):
 
 
 def test_get_misskey_urls_success():
-    with patch("find_posts.post") as mock_post, patch(
-        "find_posts.logger"
+    with patch("src.nanos.fedi_fetcher.find_posts.post") as mock_post, patch(
+        "src.nanos.fedi_fetcher.find_posts.logger"
     ) as mock_logger:
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -1291,8 +1291,8 @@ def test_get_misskey_urls_success():
 
 
 def test_get_misskey_urls_post_error():
-    with patch("find_posts.post") as mock_post, patch(
-        "find_posts.logger"
+    with patch("src.nanos.fedi_fetcher.find_posts.post") as mock_post, patch(
+        "src.nanos.fedi_fetcher.find_posts.logger"
     ) as mock_logger:
         mock_post.side_effect = Exception("Error")
         result = get_misskey_urls("testserver", "1", "testurl")
@@ -1303,8 +1303,8 @@ def test_get_misskey_urls_post_error():
 
 
 def test_get_misskey_urls_non_200_response():
-    with patch("find_posts.post") as mock_post, patch(
-        "find_posts.logger"
+    with patch("src.nanos.fedi_fetcher.find_posts.post") as mock_post, patch(
+        "src.nanos.fedi_fetcher.find_posts.logger"
     ) as mock_logger:
         mock_response = MagicMock()
         mock_response.status_code = 404
@@ -1316,8 +1316,8 @@ def test_get_misskey_urls_non_200_response():
 
 
 def test_get_misskey_urls_json_error():
-    with patch("find_posts.post") as mock_post, patch(
-        "find_posts.logger"
+    with patch("src.nanos.fedi_fetcher.find_posts.post") as mock_post, patch(
+        "src.nanos.fedi_fetcher.find_posts.logger"
     ) as mock_logger:
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -1330,8 +1330,8 @@ def test_get_misskey_urls_json_error():
         assert mock_logger.error.call_count == 2
 
 
-@patch("find_posts.add_context_url", return_value=False)
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.add_context_url", return_value=False)
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_add_context_urls_all_fail(mock_logger, mock_add_context_url):
     server = "test_server"
     access_token = "test_token"
@@ -1348,8 +1348,8 @@ def test_add_context_urls_all_fail(mock_logger, mock_add_context_url):
     )
 
 
-@patch("find_posts.add_context_url", return_value=True)
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.add_context_url", return_value=True)
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_add_context_urls_all_success(mock_logger, mock_add_context_url):
     server = "test_server"
     access_token = "test_token"
@@ -1381,7 +1381,7 @@ class MockResponse:
 
 
 def test_add_context_url():
-    with patch("find_posts.get", return_value=MockResponse(200)) as mocked_get:
+    with patch("src.nanos.fedi_fetcher.find_posts.get", return_value=MockResponse(200)) as mocked_get:
         result = find_posts.add_context_url("test-url", "test-server", "test-token")
         assert result
         mocked_get.assert_called_once()
@@ -1390,7 +1390,7 @@ def test_add_context_url():
             == "https://test-server/api/v2/search?q=test-url&resolve=true&limit=1"
         )
 
-    with patch("find_posts.get", return_value=MockResponse(403)) as mocked_get:
+    with patch("src.nanos.fedi_fetcher.find_posts.get", return_value=MockResponse(403)) as mocked_get:
         result = find_posts.add_context_url("test-url", "test-server", "test-token")
         assert not result
 
@@ -1398,21 +1398,21 @@ def test_add_context_url():
 def test_get_paginated_mastodon():
     json_data = [{"created_at": "2022-02-18T05:31:00.000Z"} for _ in range(10)]
     with patch(
-        "find_posts.get", return_value=MockResponse(200, json_data=json_data)
+        "src.nanos.fedi_fetcher.find_posts.get", return_value=MockResponse(200, json_data=json_data)
     ) as mocked_get:
         result = find_posts.get_paginated_mastodon("test-url", 10)
         assert len(result) == 10
         mocked_get.assert_called_once()
 
-    with patch("find_posts.get", return_value=MockResponse(401)) as mocked_get:
+    with patch("src.nanos.fedi_fetcher.find_posts.get", return_value=MockResponse(401)) as mocked_get:
         with pytest.raises(Exception):
             find_posts.get_paginated_mastodon("test-url", 10)
 
-    with patch("find_posts.get", return_value=MockResponse(403)) as mocked_get:
+    with patch("src.nanos.fedi_fetcher.find_posts.get", return_value=MockResponse(403)) as mocked_get:
         with pytest.raises(Exception):
             find_posts.get_paginated_mastodon("test-url", 10)
 
-    with patch("find_posts.get", return_value=MockResponse(500)) as mocked_get:
+    with patch("src.nanos.fedi_fetcher.find_posts.get", return_value=MockResponse(500)) as mocked_get:
         with pytest.raises(Exception):
             find_posts.get_paginated_mastodon("test-url", 10)
 
@@ -1422,19 +1422,19 @@ def test_get_cached_robots_cached():
     assert find_posts.get_cached_robots("test_url") == "test_robots_txt"
 
 
-@patch("find_posts.get_robots_txt_cache_path", return_value="test_cache_path")
+@patch("src.nanos.fedi_fetcher.find_posts.get_robots_txt_cache_path", return_value="test_cache_path")
 def test_get_cached_robots_no_cache(mock_get_path):
     find_posts.ROBOTS_TXT = {}
     assert find_posts.get_cached_robots("test_url") is None
 
 
-@patch("find_posts.get_cached_robots", return_value="test_robots_txt")
+@patch("src.nanos.fedi_fetcher.find_posts.get_cached_robots", return_value="test_robots_txt")
 def test_get_robots_from_url_cached(mock_get_cached_robots):
     assert find_posts.get_robots_from_url("test_url") == "test_robots_txt"
 
 
-@patch("find_posts.get")
-@patch("find_posts.get_cached_robots", return_value=None)
+@patch("src.nanos.fedi_fetcher.find_posts.get")
+@patch("src.nanos.fedi_fetcher.find_posts.get_cached_robots", return_value=None)
 def test_get_robots_from_url_exception(mock_get_cached_robots, mock_get):
     mock_get.side_effect = Exception
     find_posts.ROBOTS_TXT = {}
@@ -1442,7 +1442,7 @@ def test_get_robots_from_url_exception(mock_get_cached_robots, mock_get):
     assert find_posts.ROBOTS_TXT["test_url"] is True
 
 
-@patch("find_posts.get_robots_from_url")
+@patch("src.nanos.fedi_fetcher.find_posts.get_robots_from_url")
 @patch("urllib.robotparser.RobotFileParser")
 def test_can_fetch(mock_robotFileParser, mock_get_robots_from_url):
     test_url = "http://test.com"
@@ -1487,9 +1487,9 @@ def url():
     return "http://test.com"
 
 
-@patch("find_posts.requests")
+@patch("src.nanos.fedi_fetcher.find_posts.requests")
 def test_robots_txt_prohibited(mock_requests, headers, url):
-    with patch("find_posts.can_fetch") as mock_can_fetch:
+    with patch("src.nanos.fedi_fetcher.find_posts.can_fetch") as mock_can_fetch:
         mock_can_fetch.return_value = False
         with pytest.raises(Exception) as exc_info:
             get(url, headers)
@@ -1498,10 +1498,10 @@ def test_robots_txt_prohibited(mock_requests, headers, url):
         mock_can_fetch.assert_called_once_with(headers["User-Agent"], url)
 
 
-@patch("find_posts.requests")
-@patch("find_posts.can_fetch")
-@patch("find_posts.user_agent")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.requests")
+@patch("src.nanos.fedi_fetcher.find_posts.can_fetch")
+@patch("src.nanos.fedi_fetcher.find_posts.user_agent")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_post_success(mock_logger, mock_user_agent, mock_can_fetch, mock_requests):
     url = "http://testurl.com"
     mock_json = {"key": "value"}
@@ -1518,10 +1518,10 @@ def test_post_success(mock_logger, mock_user_agent, mock_can_fetch, mock_request
     )
 
 
-@patch("find_posts.requests")
-@patch("find_posts.can_fetch")
-@patch("find_posts.user_agent")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.requests")
+@patch("src.nanos.fedi_fetcher.find_posts.can_fetch")
+@patch("src.nanos.fedi_fetcher.find_posts.user_agent")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_post_rate_limit(mock_logger, mock_user_agent, mock_can_fetch, mock_requests):
     url = "http://testurl.com"
     mock_json = {"key": "value"}
@@ -1538,10 +1538,10 @@ def test_post_rate_limit(mock_logger, mock_user_agent, mock_can_fetch, mock_requ
         post(url, mock_json, headers, timeout)
 
 
-@patch("find_posts.requests")
-@patch("find_posts.can_fetch")
-@patch("find_posts.user_agent")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.requests")
+@patch("src.nanos.fedi_fetcher.find_posts.can_fetch")
+@patch("src.nanos.fedi_fetcher.find_posts.user_agent")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_post_robotstxt_disallowed(
     mock_logger, mock_user_agent, mock_can_fetch, mock_requests
 ):
@@ -1555,9 +1555,9 @@ def test_post_robotstxt_disallowed(
         post(url, mock_json, headers)
 
 
-@patch("find_posts.get", autospec=True)
-@patch("find_posts.ET.fromstring", autospec=True)
-@patch("find_posts.logger", autospec=True)
+@patch("src.nanos.fedi_fetcher.find_posts.get", autospec=True)
+@patch("src.nanos.fedi_fetcher.find_posts.ET.fromstring", autospec=True)
+@patch("src.nanos.fedi_fetcher.find_posts.logger", autospec=True)
 def test_get_server_from_host_meta(mock_logger, mock_parse, mock_get):
     server = "dummy-server"
     result = "result"
@@ -1599,25 +1599,25 @@ def test_get_server_from_host_meta(mock_logger, mock_parse, mock_get):
     mock_logger.error.assert_called()
 
 
-@patch("find_posts.get", side_effect=Exception("Mock Exception"))
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get", side_effect=Exception("Mock Exception"))
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_nodeinfo_get_exception(mock_logger, mock_get):
     response = find_posts.get_nodeinfo("test_server", {})
     mock_logger.error.assert_called()
     assert response is None
 
 
-@patch("find_posts.get", return_value=Mock(status_code=404))
-@patch("find_posts.get_server_from_host_meta", return_value="new_server")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get", return_value=Mock(status_code=404))
+@patch("src.nanos.fedi_fetcher.find_posts.get_server_from_host_meta", return_value="new_server")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_nodeinfo_404_status_no_fallback(mock_logger, mock_get_server, mock_get):
     response = find_posts.get_nodeinfo("test_server", {})
     mock_logger.debug.assert_called()
     assert response is None
 
 
-@patch("find_posts.get", return_value=Mock(status_code=200))
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get", return_value=Mock(status_code=200))
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_nodeinfo_200_status_no_links(mock_logger, mock_get):
     mock_get.return_value.json.return_value = {"links": []}
     response = find_posts.get_nodeinfo("test_server", {})
@@ -1625,8 +1625,8 @@ def test_get_nodeinfo_200_status_no_links(mock_logger, mock_get):
     assert response is None
 
 
-@patch("find_posts.get", return_value=Mock(status_code=404))
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get", return_value=Mock(status_code=404))
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_nodeinfo_404_status(mock_logger, mock_get):
     mock_get.return_value.json.return_value = {
         "links": [
@@ -1698,7 +1698,7 @@ def test_set_server_apis_with_unknown_software():
     assert isinstance(server["last_checked"], datetime)
 
 
-@patch("find_posts.get_paginated_mastodon")
+@patch("src.nanos.fedi_fetcher.find_posts.get_paginated_mastodon")
 def test_get_user_lists(mock_get_paginated_mastodon):
     mock_get_paginated_mastodon.return_value = "Test value"
 
@@ -1717,8 +1717,8 @@ def test_get_user_lists(mock_get_paginated_mastodon):
     assert result == "Test value"
 
 
-@patch("find_posts.get_paginated_mastodon")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get_paginated_mastodon")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_list_timeline(mock_logger, mock_get_paginated_mastodon):
     # Arrange
     server = "mastodon.social"
@@ -1745,8 +1745,8 @@ def test_get_list_timeline(mock_logger, mock_get_paginated_mastodon):
     assert result == ["post1", "post2"]
 
 
-@patch("find_posts.get_paginated_mastodon")
-@patch("find_posts.logger")
+@patch("src.nanos.fedi_fetcher.find_posts.get_paginated_mastodon")
+@patch("src.nanos.fedi_fetcher.find_posts.logger")
 def test_get_list_users(mock_logger, mock_get_paginated_mastodon):
     # define mock values
     mock_server = "mock_server"
@@ -1778,10 +1778,10 @@ def test_get_list_users(mock_logger, mock_get_paginated_mastodon):
     assert result == mock_accounts
 
 
-@patch("find_posts.get_all_known_context_urls")
-@patch("find_posts.add_context_urls")
-@patch("find_posts.add_user_posts")
-@patch("find_posts.filter_known_users")
+@patch("src.nanos.fedi_fetcher.find_posts.get_all_known_context_urls")
+@patch("src.nanos.fedi_fetcher.find_posts.add_context_urls")
+@patch("src.nanos.fedi_fetcher.find_posts.add_user_posts")
+@patch("src.nanos.fedi_fetcher.find_posts.filter_known_users")
 def test_fetch_timeline_context_with_empty_posts(
     mock_filter_known_users,
     mock_add_user_posts,
