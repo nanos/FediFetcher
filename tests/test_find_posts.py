@@ -2,14 +2,14 @@ import json
 import re
 from datetime import datetime
 
-import find_posts
+from src.nanos.fedi_fetcher import find_posts
 import pytest
 import requests
 from urllib import parse
 from requests.models import Response
 from unittest.mock import MagicMock, Mock, patch
 
-from find_posts import (
+from src.nanos.fedi_fetcher.find_posts import (
     add_context_urls,
     add_user_posts,
     filter_known_users,
@@ -877,7 +877,7 @@ def test_parse_pleroma_url(mock_get_redirect_url):
 
 import re
 import pytest
-from find_posts import parse_pleroma_profile_url
+from src.nanos.fedi_fetcher.find_posts import parse_pleroma_profile_url
 
 
 def test_parse_pleroma_profile_url():

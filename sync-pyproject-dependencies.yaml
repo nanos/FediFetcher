@@ -1,0 +1,35 @@
+name: Sync pyproject.toml dependencies
+
+on:
+  push:
+    paths:
+      - "requirement.txt"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the
+      # added or changed files to the repository.
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: "pyproject.toml"
+
+    - name: Sync dependencies in pyproject.toml with requirements.txt
+      run: uv add --frozen -r requirements.txt
+
+    - name: Commit changes
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "Sync dependencies in pyproject.toml with requirements.txt"
+        file_pattern: "pyproject.toml"
