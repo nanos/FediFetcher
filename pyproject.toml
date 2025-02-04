@@ -1,0 +1,45 @@
+[build-system]
+requires = [
+  "setuptools>=75.8.0",
+  "setuptools-scm",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+
+[project]
+name = "fedi-fetcher"
+dynamic = ["version"]
+requires-python = ">= 3.11"
+authors = [
+  { name = "Michael Thomas", email = "nanos@thms.uk" }
+]
+description = "FediFetcher is a tool for Mastodon that automatically fetches missing replies and posts from other fediverse instances, and adds them to your own Mastodon instance."
+readme = "README.md"
+license = { file = "LICENSE.md" }
+keywords = ["fediverse", "mastodon", "toot"]
+dependencies = [
+    "certifi==2024.7.4",
+    "charset-normalizer==3.0.1",
+    "defusedxml==0.7.1",
+    "docutils==0.19",
+    "idna==3.7",
+    "iniconfig==2.0.0",
+    "packaging==24.1",
+    "pluggy==1.5.0",
+    "pytest==8.2.2",
+    "python-dateutil==2.8.2",
+    "requests==2.32.0",
+    "six==1.16.0",
+    "smmap==5.0.0",
+    "urllib3==1.26.19",
+    "xxhash==3.4.1",
+]
+
+[project.urls]
+Homepage = "https://blog.thms.uk/fedifetcher?utm_source=github"
+Documentation = "https://github.com/nanos/FediFetcher/wiki"
+Repository = "https://github.com/nanos/FediFetcher"
+
+[project.scripts]
+fedi-fetcher = "nanos.fedi_fetcher.find_posts:main"
