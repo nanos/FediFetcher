@@ -3,7 +3,7 @@ name: Sync pyproject.toml dependencies
 on:
   push:
     paths:
-      - "requirement.txt"
+      - "requirements.txt"
 
 jobs:
   sync:
