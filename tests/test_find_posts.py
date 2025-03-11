@@ -43,6 +43,7 @@ from find_posts import (
     post,
     set_server_apis,
     user_has_opted_out,
+    parse_url
 )
 
 
@@ -955,6 +956,25 @@ def test_parse_peertube_url_valid():
 
     # assert that the result is as expected
     assert result == expected
+
+def test_parse_url():
+    tests = [
+        (
+            "https://video.infosec.exchange/videos/watch/56f1d0b5-d98f-4bad-b1e7-648ae074ab9d",
+            ("video.infosec.exchange", "56f1d0b5-d98f-4bad-b1e7-648ae074ab9d")
+        ),
+        (
+            "https://veedeo.org/videos/watch/a51bb77c-e1bd-4d6a-b119-95af176f6d66",
+            ("veedeo.org", "a51bb77c-e1bd-4d6a-b119-95af176f6d66")
+        ),
+        (
+            'https://foo.bar/nothing',
+            None
+        )
+    ]
+    for (url,expected) in tests:
+        result = parse_url(url, {})
+        assert result == expected
 
 
 def test_parse_peertube_url_invalid():
