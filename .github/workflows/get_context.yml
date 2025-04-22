@@ -37,7 +37,8 @@ jobs:
           name: artifacts
           path: |
             artifacts
-      - name: Checkout user's forked repository for keeping workflow alive
-        uses: actions/checkout@v4
-      - name: Keep workflow alive
-        uses: gautamkrishnar/keepalive-workflow@v1
+      # Temporarily disable these while we figure out what to do.
+      # - name: Checkout user's forked repository for keeping workflow alive
+      #   uses: actions/checkout@v4
+      # - name: Keep workflow alive
+      #   uses: gautamkrishnar/keepalive-workflow@v1
