@@ -1120,7 +1120,7 @@ def can_fetch(user_agent, url):
 def user_agent():
     return f"FediFetcher/{VERSION}; +{arguments.server} (https://go.thms.uk/ff)"
 
-def get(url, headers = {}, timeout = 0, max_tries = 5, ignore_robots_txt = False):
+def get(url, headers = {}, timeout = 0, max_tries = 5, backoff = 0.5, ignore_robots_txt = False):
     """A simple wrapper to make a get request while providing our user agent, and respecting rate limits"""
     h = headers.copy()
     if 'User-Agent' not in h:
@@ -1135,17 +1135,21 @@ def get(url, headers = {}, timeout = 0, max_tries = 5, ignore_robots_txt = False
     response = requests.get( url, headers= h, timeout=timeout)
     if response.status_code == 429:
         if max_tries > 0:
-            reset = parser.parse(response.headers['x-ratelimit-reset'])
             now = datetime.now(datetime.now().astimezone().tzinfo)
-            wait = (reset - now).total_seconds() + 1
-            logger.warning(f"Rate Limit hit requesting {url}. Waiting {wait} sec to retry at {response.headers['x-ratelimit-reset']}")
+            if 'x-ratelimit-reset' in response.headers:
+                reset = parser.parse(response.headers['x-ratelimit-reset'])
+                wait = (reset - now).total_seconds() + 1
+            else:
+                wait = backoff
+                reset = now + timedelta(seconds=wait)
+            logger.warning(f"Rate Limit hit requesting {url}. Waiting {wait} sec to retry at {reset}")
             time.sleep(wait)
-            return get(url, headers, timeout, max_tries - 1)
+            return get(url, headers, timeout, max_tries - 1, backoff * 4)
 
         raise Exception(f"Maximum number of retries exceeded for rate limited request {url}")
     return response
 
-def post(url, json, headers = {}, timeout = 0, max_tries = 5):
+def post(url, json, headers = {}, timeout = 0, max_tries = 5, backoff = 0.5):
     """A simple wrapper to make a post request while providing our user agent, and respecting rate limits"""
     h = headers.copy()
     if 'User-Agent' not in h:
@@ -1160,12 +1164,16 @@ def post(url, json, headers = {}, timeout = 0, max_tries = 5):
     response = requests.post( url, json=json, headers= h, timeout=timeout)
     if response.status_code == 429:
         if max_tries > 0:
-            reset = parser.parse(response.headers['x-ratelimit-reset'])
             now = datetime.now(datetime.now().astimezone().tzinfo)
-            wait = (reset - now).total_seconds() + 1
-            logger.warning(f"Rate Limit hit requesting {url}. Waiting {wait} sec to retry at {response.headers['x-ratelimit-reset']}")
+            if 'x-ratelimit-reset' in response.headers:
+                reset = parser.parse(response.headers['x-ratelimit-reset'])
+                wait = (reset - now).total_seconds() + 1
+            else:
+                wait = backoff
+                reset = now + timedelta(seconds=wait)
+            logger.warning(f"Rate Limit hit requesting {url}. Waiting {wait} sec to retry at {reset}")
             time.sleep(wait)
-            return post(url, json, headers, timeout, max_tries - 1)
+            return post(url, json, headers, timeout, max_tries - 1, backoff * 4)
 
         raise Exception(f"Maximum number of retries exceeded for rate limited request {url}")
     return response
