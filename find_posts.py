@@ -1738,13 +1738,13 @@ if __name__ == "__main__":
                 add_context_urls(arguments.server, token, known_context_urls, seen_urls)
 
         with open(KNOWN_FOLLOWINGS_FILE, "w", encoding="utf-8") as f:
-            f.write("\n".join(list(known_followings)[-10000:]))
+            f.write("\n".join(list(known_followings)[-100000:]))
 
         with open(SEEN_URLS_FILE, "w", encoding="utf-8") as f:
-            f.write("\n".join(list(seen_urls)[-10000:]))
+            f.write("\n".join(list(seen_urls)[-100000:]))
 
         with open(REPLIED_TOOT_SERVER_IDS_FILE, "w", encoding="utf-8") as f:
-            json.dump(dict(list(replied_toot_server_ids.items())[-10000:]), f)
+            json.dump(dict(list(replied_toot_server_ids.items())[-100000:]), f)
 
         with open(RECENTLY_CHECKED_USERS_FILE, "w", encoding="utf-8") as f:
             f.write(recently_checked_users.toJSON())
