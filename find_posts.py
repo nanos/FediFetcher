@@ -1564,19 +1564,21 @@ if __name__ == "__main__":
                 os.remove(LOCK_FILE)
                 logger.debug("Lock file has expired. Removed lock file.")
             else:
-                logger.critical(f"Lock file age is {datetime.now() - lock_time} - below --lock-hours={arguments.lock_hours} provided.")
+                failure_message = f"Lock file age is {datetime.now() - lock_time} - below --lock-hours={arguments.lock_hours} provided."
+                logger.critical(failure_message)
                 if(arguments.on_fail != None and arguments.on_fail != ''):
                     try:
-                        get(build_callback_url(arguments.on_fail, {"rid": runId, "ping": int((datetime.now() - start).total_seconds() * 1000)}), ignore_robots_txt = True)
+                        get(build_callback_url(arguments.on_fail, {"rid": runId, "ping": int((datetime.now() - start).total_seconds() * 1000), "msg": failure_message}), ignore_robots_txt = True)
                     except Exception as ex:
                         logger.error(f"Error getting callback url: {ex}")
                 sys.exit(1)
 
         except Exception:
-            logger.critical("Cannot read logfile age - aborting.")
+            failure_message = "Cannot read logfile age - aborting."
+            logger.critical(failure_message)
             if(arguments.on_fail != None and arguments.on_fail != ''):
                 try:
-                    get(build_callback_url(arguments.on_fail, {"rid": runId, "ping": int((datetime.now() - start).total_seconds() * 1000)}), ignore_robots_txt = True)
+                    get(build_callback_url(arguments.on_fail, {"rid": runId, "ping": int((datetime.now() - start).total_seconds() * 1000), "msg": failure_message}), ignore_robots_txt = True)
                 except Exception as ex:
                     logger.error(f"Error getting callback url: {ex}")
             sys.exit(1)
@@ -1775,13 +1777,13 @@ if __name__ == "__main__":
 
         logger.info(f"Processing finished in {duration}.")
 
-    except Exception:
+    except Exception as ex:
         os.remove(LOCK_FILE)
         duration = datetime.now() - start
         logger.error(f"Job failed after {duration}.")
         if(arguments.on_fail != None and arguments.on_fail != ''):
             try:
-                get(build_callback_url(arguments.on_fail, {"rid": runId, "ping": int(duration.total_seconds() * 1000)}), ignore_robots_txt = True)
+                get(build_callback_url(arguments.on_fail, {"rid": runId, "ping": int(duration.total_seconds() * 1000), "msg": str(ex)}), ignore_robots_txt = True)
             except Exception as ex:
                 logger.error(f"Error getting callback url: {ex}")
         raise
