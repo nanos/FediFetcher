@@ -14,7 +14,7 @@ import argparse
 import uuid
 import defusedxml.ElementTree as ET
 import urllib.robotparser
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 import xxhash
 
 logger = logging.getLogger("FediFetcher")
@@ -1149,6 +1149,14 @@ def get(url, headers = {}, timeout = 0, max_tries = 5, backoff = 0.5, ignore_rob
         raise Exception(f"Maximum number of retries exceeded for rate limited request {url}")
     return response
 
+def build_callback_url(url, params):
+    """Add query parameters to a callback URL, replacing any that already exist."""
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    for key, value in params.items():
+        query[key] = [str(value)]
+    return urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
+
 def post(url, json, headers = {}, timeout = 0, max_tries = 5, backoff = 0.5):
     """A simple wrapper to make a post request while providing our user agent, and respecting rate limits"""
     h = headers.copy()
@@ -1537,7 +1545,7 @@ if __name__ == "__main__":
 
     if(arguments.on_start != None and arguments.on_start != ''):
         try:
-            get(f"{arguments.on_start}?rid={runId}", ignore_robots_txt = True)
+            get(build_callback_url(arguments.on_start, {"rid": runId}), ignore_robots_txt = True)
         except Exception as ex:
             logger.error(f"Error getting callback url: {ex}")
 
@@ -1559,7 +1567,7 @@ if __name__ == "__main__":
                 logger.critical(f"Lock file age is {datetime.now() - lock_time} - below --lock-hours={arguments.lock_hours} provided.")
                 if(arguments.on_fail != None and arguments.on_fail != ''):
                     try:
-                        get(f"{arguments.on_fail}?rid={runId}&ping={int((datetime.now() - start).total_seconds() * 1000)}", ignore_robots_txt = True)
+                        get(build_callback_url(arguments.on_fail, {"rid": runId, "ping": int((datetime.now() - start).total_seconds() * 1000)}), ignore_robots_txt = True)
                     except Exception as ex:
                         logger.error(f"Error getting callback url: {ex}")
                 sys.exit(1)
@@ -1568,7 +1576,7 @@ if __name__ == "__main__":
             logger.critical("Cannot read logfile age - aborting.")
             if(arguments.on_fail != None and arguments.on_fail != ''):
                 try:
-                    get(f"{arguments.on_fail}?rid={runId}&ping={int((datetime.now() - start).total_seconds() * 1000)}", ignore_robots_txt = True)
+                    get(build_callback_url(arguments.on_fail, {"rid": runId, "ping": int((datetime.now() - start).total_seconds() * 1000)}), ignore_robots_txt = True)
                 except Exception as ex:
                     logger.error(f"Error getting callback url: {ex}")
             sys.exit(1)
@@ -1761,7 +1769,7 @@ if __name__ == "__main__":
 
         if(arguments.on_done != None and arguments.on_done != ''):
             try:
-                get(f"{arguments.on_done}?rid={runId}&ping={int(duration.total_seconds() * 1000)}", ignore_robots_txt = True)
+                get(build_callback_url(arguments.on_done, {"rid": runId, "ping": int(duration.total_seconds() * 1000)}), ignore_robots_txt = True)
             except Exception as ex:
                 logger.error(f"Error getting callback url: {ex}")
 
@@ -1773,7 +1781,7 @@ if __name__ == "__main__":
         logger.error(f"Job failed after {duration}.")
         if(arguments.on_fail != None and arguments.on_fail != ''):
             try:
-                get(f"{arguments.on_fail}?rid={runId}&ping={int(duration.total_seconds() * 1000)}", ignore_robots_txt = True)
+                get(build_callback_url(arguments.on_fail, {"rid": runId, "ping": int(duration.total_seconds() * 1000)}), ignore_robots_txt = True)
             except Exception as ex:
                 logger.error(f"Error getting callback url: {ex}")
         raise
