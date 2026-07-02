@@ -14,7 +14,7 @@ import argparse
 import uuid
 import defusedxml.ElementTree as ET
 import urllib.robotparser
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 import xxhash
 
 logger = logging.getLogger("FediFetcher")
@@ -1150,10 +1150,12 @@ def get(url, headers = {}, timeout = 0, max_tries = 5, backoff = 0.5, ignore_rob
     return response
 
 def build_callback_url(url, params):
-    """Append query parameters to a callback URL, using '&' if the URL already has a query string, otherwise '?'."""
-    separator = '&' if '?' in url else '?'
-    query = '&'.join(f"{key}={value}" for key, value in params.items())
-    return f"{url}{separator}{query}"
+    """Add query parameters to a callback URL, replacing any that already exist."""
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    for key, value in params.items():
+        query[key] = [str(value)]
+    return urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
 
 def post(url, json, headers = {}, timeout = 0, max_tries = 5, backoff = 0.5):
     """A simple wrapper to make a post request while providing our user agent, and respecting rate limits"""
