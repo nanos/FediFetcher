@@ -1757,15 +1757,13 @@ if __name__ == "__main__":
 
         os.remove(LOCK_FILE)
 
-        duration = datetime.now() - start
-
         if(arguments.on_done != None and arguments.on_done != ''):
             try:
-                get(f"{arguments.on_done}?rid={runId}&ping={duration.total_seconds()}", ignore_robots_txt = True)
+                get(f"{arguments.on_done}?rid={runId}", ignore_robots_txt = True)
             except Exception as ex:
                 logger.error(f"Error getting callback url: {ex}")
 
-        logger.info(f"Processing finished in {duration}.")
+        logger.info(f"Processing finished in {datetime.now() - start}.")
 
     except Exception:
         os.remove(LOCK_FILE)
