@@ -1559,7 +1559,7 @@ if __name__ == "__main__":
                 logger.critical(f"Lock file age is {datetime.now() - lock_time} - below --lock-hours={arguments.lock_hours} provided.")
                 if(arguments.on_fail != None and arguments.on_fail != ''):
                     try:
-                        get(f"{arguments.on_fail}?rid={runId}&ping={(datetime.now() - start).total_seconds()}", ignore_robots_txt = True)
+                        get(f"{arguments.on_fail}?rid={runId}&ping={int((datetime.now() - start).total_seconds() * 1000)}", ignore_robots_txt = True)
                     except Exception as ex:
                         logger.error(f"Error getting callback url: {ex}")
                 sys.exit(1)
@@ -1568,7 +1568,7 @@ if __name__ == "__main__":
             logger.critical("Cannot read logfile age - aborting.")
             if(arguments.on_fail != None and arguments.on_fail != ''):
                 try:
-                    get(f"{arguments.on_fail}?rid={runId}&ping={(datetime.now() - start).total_seconds()}", ignore_robots_txt = True)
+                    get(f"{arguments.on_fail}?rid={runId}&ping={int((datetime.now() - start).total_seconds() * 1000)}", ignore_robots_txt = True)
                 except Exception as ex:
                     logger.error(f"Error getting callback url: {ex}")
             sys.exit(1)
@@ -1761,7 +1761,7 @@ if __name__ == "__main__":
 
         if(arguments.on_done != None and arguments.on_done != ''):
             try:
-                get(f"{arguments.on_done}?rid={runId}&ping={duration.total_seconds()}", ignore_robots_txt = True)
+                get(f"{arguments.on_done}?rid={runId}&ping={int(duration.total_seconds() * 1000)}", ignore_robots_txt = True)
             except Exception as ex:
                 logger.error(f"Error getting callback url: {ex}")
 
@@ -1773,7 +1773,7 @@ if __name__ == "__main__":
         logger.error(f"Job failed after {duration}.")
         if(arguments.on_fail != None and arguments.on_fail != ''):
             try:
-                get(f"{arguments.on_fail}?rid={runId}&ping={duration.total_seconds()}", ignore_robots_txt = True)
+                get(f"{arguments.on_fail}?rid={runId}&ping={int(duration.total_seconds() * 1000)}", ignore_robots_txt = True)
             except Exception as ex:
                 logger.error(f"Error getting callback url: {ex}")
         raise
