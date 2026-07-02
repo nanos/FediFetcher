@@ -20,7 +20,7 @@ import xxhash
 logger = logging.getLogger("FediFetcher")
 robotParser = urllib.robotparser.RobotFileParser()
 
-VERSION = "7.1.19"
+VERSION = "7.1.20"
 
 argparser=argparse.ArgumentParser()
 
