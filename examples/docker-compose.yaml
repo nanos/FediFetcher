@@ -4,8 +4,13 @@ services:
     stdin_open: true
     tty: true
     image: ghcr.io/nanos/fedifetcher:latest
-    # We override the Dockerfile entrypoint, run the python code with our commands, then append our sleep command.
-    entrypoint: ["sh", "-c", "python /app/find_posts.py --access-token=<TOKEN> --server=<SERVER>; sleep 3600; "]
+    # We override the Dockerfile entrypoint, run the python code with our commands, then append our sleep command: resume after a minute.
+    entrypoint: ["sh", "-c", "python /app/find_posts.py; sleep 60; "]
+    environment:
+      FF_SERVER: "<SERVER>"
+      FF_ACCESS_TOKEN: "<TOKEN>"
+      FF_HOME_TIMELINE_LENGTH: 100
+      # Any other options
     # Persist our data
     volumes:
       - ./data:/app/artifacts
