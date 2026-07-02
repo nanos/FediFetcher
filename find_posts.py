@@ -1559,7 +1559,7 @@ if __name__ == "__main__":
                 logger.critical(f"Lock file age is {datetime.now() - lock_time} - below --lock-hours={arguments.lock_hours} provided.")
                 if(arguments.on_fail != None and arguments.on_fail != ''):
                     try:
-                        get(f"{arguments.on_fail}?rid={runId}", ignore_robots_txt = True)
+                        get(f"{arguments.on_fail}?rid={runId}&ping={(datetime.now() - start).total_seconds()}", ignore_robots_txt = True)
                     except Exception as ex:
                         logger.error(f"Error getting callback url: {ex}")
                 sys.exit(1)
@@ -1568,7 +1568,7 @@ if __name__ == "__main__":
             logger.critical("Cannot read logfile age - aborting.")
             if(arguments.on_fail != None and arguments.on_fail != ''):
                 try:
-                    get(f"{arguments.on_fail}?rid={runId}", ignore_robots_txt = True)
+                    get(f"{arguments.on_fail}?rid={runId}&ping={(datetime.now() - start).total_seconds()}", ignore_robots_txt = True)
                 except Exception as ex:
                     logger.error(f"Error getting callback url: {ex}")
             sys.exit(1)
@@ -1769,10 +1769,11 @@ if __name__ == "__main__":
 
     except Exception:
         os.remove(LOCK_FILE)
-        logger.error(f"Job failed after {datetime.now() - start}.")
+        duration = datetime.now() - start
+        logger.error(f"Job failed after {duration}.")
         if(arguments.on_fail != None and arguments.on_fail != ''):
             try:
-                get(f"{arguments.on_fail}?rid={runId}", ignore_robots_txt = True)
+                get(f"{arguments.on_fail}?rid={runId}&ping={duration.total_seconds()}", ignore_robots_txt = True)
             except Exception as ex:
                 logger.error(f"Error getting callback url: {ex}")
         raise
