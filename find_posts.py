@@ -1768,14 +1768,15 @@ if __name__ == "__main__":
         os.remove(LOCK_FILE)
 
         duration = datetime.now() - start
+        success_message = f"Processing finished in {duration}."
 
         if(arguments.on_done != None and arguments.on_done != ''):
             try:
-                get(build_callback_url(arguments.on_done, {"rid": runId, "ping": int(duration.total_seconds() * 1000)}), ignore_robots_txt = True)
+                get(build_callback_url(arguments.on_done, {"rid": runId, "ping": int(duration.total_seconds() * 1000), "msg": success_message}), ignore_robots_txt = True)
             except Exception as ex:
                 logger.error(f"Error getting callback url: {ex}")
 
-        logger.info(f"Processing finished in {duration}.")
+        logger.info(success_message)
 
     except Exception as ex:
         os.remove(LOCK_FILE)
