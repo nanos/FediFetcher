@@ -4,7 +4,7 @@ mypy==2.3.1
 packaging==26.3
 pytest==9.1.1
 pytest-cov==7.1.0
-pytest-randomly==4.1.0
-ruff==0.16.5
+pytest-randomly==5.0.0
+ruff==0.16.9
 types-python-dateutil==2.9.0.20260807
-types-requests==2.33.0.20260712
+types-requests==2.33.0.20260906
