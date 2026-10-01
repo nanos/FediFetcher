@@ -1,9 +1,9 @@
 certifi==2026.7.22
 charset-normalizer==3.5.1
 defusedxml==0.7.1
-idna==3.19
+idna==3.20
 python-dateutil==2.9.0.post0
 requests==2.34.2
 six==1.17.0
-urllib3==2.7.0
+urllib3==2.8.0
 xxhash==4.0.1
