@@ -53,13 +53,15 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Work out the image tags and version
+      - name: Work out the image tags, version and revision
         id: tags
         env:
           REF: ${{ github.ref_name }}
           IMAGE: ghcr.io/${{ github.repository_owner }}/fedifetcher
         run: |
           echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
+          # not github.sha: `run` may have moved the tag onto its version bump commit
+          echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           {
             echo "tags<<EOF"
             echo "$IMAGE:$REF"
@@ -84,3 +86,4 @@ jobs:
           tags: ${{ steps.tags.outputs.tags }}
           build-args: |
             VERSION=${{ steps.tags.outputs.version }}
+            REVISION=${{ steps.tags.outputs.revision }}
