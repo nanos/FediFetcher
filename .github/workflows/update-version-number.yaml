@@ -53,12 +53,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Work out the image tags
+      - name: Work out the image tags and version
         id: tags
         env:
           REF: ${{ github.ref_name }}
           IMAGE: ghcr.io/${{ github.repository_owner }}/fedifetcher
         run: |
+          echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
           {
             echo "tags<<EOF"
             echo "$IMAGE:$REF"
@@ -81,3 +82,5 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            VERSION=${{ steps.tags.outputs.version }}
