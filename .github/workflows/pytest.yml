@@ -37,7 +37,7 @@ jobs:
       matrix:
         # 3.11 is the floor: fedifetcher.servers uses StrEnum. The top of the
         # range wants extending as each new Python is released.
-        python-version: ['3.11', '3.12', '3.13', '3.14']
+        python-version: ['3.11', '3.12', '3.13', '3.14', '3.15']
 
     steps:
     - name: Checkout code

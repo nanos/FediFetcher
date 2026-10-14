@@ -1,4 +1,4 @@
-FROM python:3.14-alpine
+FROM python:3.15-alpine
 LABEL org.opencontainers.image.source=https://github.com/nanos/FediFetcher \
       org.opencontainers.image.description="Pull missing posts into Mastodon" \
       org.opencontainers.image.licenses=MIT
