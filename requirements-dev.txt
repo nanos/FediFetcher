@@ -1,10 +1,10 @@
 -r requirements.txt
-mypy==2.3.1
+mypy==2.4.1
 # pytest already pulls this in, but tests/test_packaging.py imports it directly.
 packaging==26.3
-pytest==9.1.1
+pytest==9.2.0
 pytest-cov==7.1.0
 pytest-randomly==5.0.0
-ruff==0.16.9
-types-python-dateutil==2.9.0.20260807
-types-requests==2.33.0.20260906
+ruff==0.17.3
+types-python-dateutil==2.9.0.20261021
+types-requests==2.33.0.20261006
